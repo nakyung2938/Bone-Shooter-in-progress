@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#151516">
+  <meta name="description" content="본죽 BON-SHOOTER. 따뜻한 한 발로 일상을 되찾는 브랜드 아케이드.">
+  <title>BON-SHOOTER | 본죽</title>
+  <link rel="preload" href="Mulmaru.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="brand-header">
+      <div class="brand-lockup"><span class="brand-name">본죽</span><span class="brand-divider"></span><span class="game-wordmark">BON-SHOOTER</span></div>
+      <span class="brand-edition">A LITTLE RICE. A LITTLE MIRACLE.</span>
+      <div class="header-actions">
+        <button class="icon-button" id="helpBtn" aria-label="게임 방법" title="게임 방법" aria-haspopup="dialog" aria-controls="helpDialog" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+        </button>
+        <button class="icon-button" id="soundBtn" aria-label="소리 켜기" title="소리 켜기" aria-pressed="false" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><g id="soundOn" hidden><path d="M16 9a5 5 0 0 1 0 6M19.364 18.364a9 9 0 0 0 0-12.728"/></g><g id="soundOff"><path d="m22 9-6 6m0-6 6 6"/></g></svg>
+        </button>
+        <button class="icon-button" id="pauseBtn" aria-label="일시정지" title="일시정지" type="button" disabled>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>
+        </button>
+      </div>
+    </header>
+    <main class="game-arena" id="gameArena" aria-label="본죽 밥알 슈팅 게임">
+      <canvas id="gameCanvas" width="720" height="1280" tabindex="0" aria-label="좀비 쪽 화면을 누르고 있으면 밥알 연속 발사. 손을 떼면 멈춤">이 게임은 Canvas를 지원하는 브라우저가 필요합니다.</canvas>
+      <section class="hud" id="hud" aria-label="게임 현황">
+        <div class="readout hp-readout"><span class="readout-label">HP</span><div class="hearts" id="hearts" role="img" aria-label="체력 3 / 3"><span>♥</span><span>♥</span><span>♥</span></div></div>
+        <div class="readout time-readout"><span class="readout-label">TIME</span><b id="timeText">00:30</b></div>
+        <div class="readout score-readout"><span class="readout-label">SCORE</span><b id="scoreText">000000</b></div>
+      </section>
+      <section class="overlay start-screen" id="startScreen" aria-labelledby="startTitle">
+        <div class="start-content">
+          <p class="eyebrow">본죽의 작은 아케이드</p>
+          <h1 id="startTitle">BON<br>SHOOTER<span class="title-dot">.</span></h1>
+          <p class="tagline">따뜻한 한 발, 든든한 회복.</p>
+          <div class="start-art" aria-hidden="true">
+            <img class="welcome-zombie" src="zombie_gray_front.png" alt="">
+            <img class="welcome-bowl" src="bonjuk_bowl.png" alt="">
+            <img class="welcome-human" src="human_white.png" alt="">
+          </div>
+          <button class="primary-button" id="startBtn" type="button" disabled><span id="startLabel">준비 중</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+          <p class="load-status" id="loadStatus" role="status"></p>
+        </div>
+        <span class="edition-stamp" aria-hidden="true">BONJUK ARCADE / 01</span>
+      </section>
+      <section class="overlay pause-screen" id="pauseScreen" aria-labelledby="pauseTitle" hidden>
+        <p class="eyebrow">잠깐 쉬어가요</p><h2 id="pauseTitle">PAUSED</h2>
+        <button class="primary-button" id="resumeBtn" type="button">계속하기<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+      </section>
+      <section class="overlay result-screen" id="resultScreen" aria-labelledby="resultTitle" hidden>
+        <p class="eyebrow" id="resultMessage">따뜻한 한 그릇, 수고했어요!</p>
+        <h2 id="resultTitle">TIME UP!</h2>
+        <img class="result-human" src="human_gray.png" alt="회복된 캐릭터">
+        <div class="result-score"><span>SCORE</span><strong id="resultScore">0</strong></div>
+        <div class="reward" id="reward"><span class="reward-label">REWARD</span><strong id="couponReward">다음 한 발을 응원해요</strong><small id="rewardNote"></small></div>
+        <button class="primary-button" id="restartBtn" type="button">RESTART<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+      </section>
+      <p class="sr-only" id="announcement" aria-live="polite"></p>
+    </main>
+    <footer class="brand-footer"><span>한 그릇에 담은 정성</span><span>© BONJUK</span></footer>
+  </div>
+  <dialog class="help-dialog" id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpGoal">
+    <header class="help-header">
+      <div><p class="eyebrow">HOW TO PLAY</p><h2 id="helpTitle" tabindex="-1">게임 방법</h2></div>
+      <button class="icon-button" id="helpCloseBtn" aria-label="게임 방법 닫기" title="닫기" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18m0-12 12 12"/></svg></button>
+    </header>
+    <div class="help-body">
+      <p class="help-goal" id="helpGoal">30초 안에 최고 점수에 도전해요.</p>
+      <div class="help-art" aria-hidden="true">
+        <img class="help-bowl" src="bonjuk_bowl.png" alt="">
+        <div class="help-shot"><img src="rice_idle.png" alt=""><svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></div>
+        <img class="help-character" src="zombie_gray_front.png" alt="">
+        <svg class="help-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        <img class="help-character" src="human_gray.png" alt="">
+      </div>
+      <ol class="help-steps">
+        <li><span class="step-number" aria-hidden="true">01</span><div><strong>좀비 쪽을 꾹 누르기</strong><p>좀비가 있는 곳을 터치하거나 클릭해요.</p></div></li>
+        <li><span class="step-number" aria-hidden="true">02</span><div><strong>누르고 있으면 우다다!</strong><p>드래그 없이 밥알이 연속 발사돼요. 손을 떼면 멈춰요.</p></div></li>
+        <li><span class="step-number" aria-hidden="true">03</span><div><strong>두 번 맞혀 회복시키기</strong><p id="helpRecovery">같은 좀비를 두 번 맞히면 사람으로 회복돼요.</p></div></li>
+      </ol>
+      <div class="help-rules">
+        <p class="help-points" id="helpPoints">적중 +100 · 회복 보너스 +250</p>
+        <p id="helpCombo">3초 안에 연속으로 맞히면 COMBO!</p>
+        <p id="helpLives">하트는 3개. 좀비가 하단 경계를 넘으면 하나씩 줄고, 모두 잃으면 게임이 끝나요.</p>
+      </div>
+    </div>
+    <footer class="help-footer"><button class="primary-button" id="helpConfirmBtn" type="button"><span id="helpConfirmLabel">확인</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button></footer>
+  </dialog>
+  <script src="sat.js"></script>
+  <script src="hit-shapes.js"></script>
+  <script src="game-core.js"></script>
+  <script src="game-renderer.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
