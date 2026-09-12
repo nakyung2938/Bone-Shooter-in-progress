@@ -6,6 +6,7 @@
   const {
     COLORS: C,
     CONFIG,
+    DIALOGUE,
     enemyPose,
     muzzle,
     solveShot,
@@ -97,6 +98,7 @@
       c.rect(0, l.fieldTop - 15, l.width, l.height - l.fieldTop + 15);
       c.clip();
       for (const e of [...game.enemies].sort((a, b) => a.y - b.y)) this.enemy(e, game);
+      this.drawSpeech(game, aim);
       for (const s of game.shots) this.shot(s);
       this.guide(game, aim);
       this.player(game, aim);
@@ -227,6 +229,66 @@
       const loaded = projectilePose({ ...origin, size: 104 * l.unit, sprite: game.nextMeal,
         angle: aim.active ? solveShot(l, aim.point)?.angle ?? -Math.PI / 2 : -Math.PI / 2 });
       this.sprite(loaded.sprite, origin.x, origin.y, loaded.w, loaded.h, {angle: loaded.angle});
+    }
+    speechLayout(game, aim = {active: false}) {
+      const speech = game.speech;
+      if (!speech || game.time - speech.startedAt >= DIALOGUE.duration) return null;
+      const speaker = game.enemies.find(e => e.id === speech.enemyId);
+      if (!speaker || speaker.dead || speaker.hits >= CONFIG.hitsToRecover || game.time - speaker.hitAt < .7) return null;
+      const l = game.layout, p = enemyPose(speaker, game.time), u = l.unit;
+      const font = `${24 * u}px Mulmaru, sans-serif`, padding = 12 * u;
+      const maxWidth = Math.min(312 * u, l.width - padding * 4);
+      const c = this.ctx, lines = [];
+      c.save();
+      c.font = font;
+      let line = '';
+      for (const character of speech.text) {
+        if (line && c.measureText(line + character).width > maxWidth) {
+          lines.push(line.trim());
+          line = '';
+        }
+        line += character;
+      }
+      if (line.trim()) lines.push(line.trim());
+      const width = Math.max(...lines.map(text => c.measureText(text).width)) + padding * 2;
+      c.restore();
+      const lineHeight = 30 * u, height = lines.length * lineHeight + 16 * u;
+      const x = clamp(p.x - width / 2, padding, l.width - padding - width);
+      const y = p.y - p.h / 2 - 14 * u - height;
+      if (y < l.fieldTop || y + height > l.dangerY) return null;
+      const overlaps = b => x < b.x + b.w && x + width > b.x && y < b.y + b.h && y + height + 8 * u > b.y;
+      for (const e of game.enemies) {
+        if (e.id === speaker.id) continue;
+        const other = enemyPose(e, game.time);
+        if (overlaps({x:other.x - other.w / 2 - 4 * u,y:other.y - other.h / 2 - 4 * u,w:other.w + 8 * u,h:other.h + 8 * u})) return null;
+      }
+      for (const e of this.effects) {
+        if (e.type === 'fire' || e.suppressPopup || game.time - e.time >= .7) continue;
+        if (overlaps({x:(e.popupX ?? e.x) - 85 * u,y:(e.popupY ?? e.y) - (game.time - e.time) * 40 - 18 * u,w:170 * u,h:70 * u})) return null;
+      }
+      if (aim.active && overlaps({x:aim.point.x - 12 * u,y:aim.point.y - 12 * u,w:24 * u,h:24 * u})) return null;
+      return {x, y, width, height, lines, lineHeight, font, tailX:clamp(p.x, x + 12 * u, x + width - 12 * u)};
+    }
+    drawSpeech(game, aim) {
+      const box = this.speechLayout(game, aim);
+      if (!box) return;
+      const c = this.ctx, u = game.layout.unit, age = game.time - game.speech.startedAt;
+      c.save();
+      c.globalAlpha = Math.min(clamp(age / .12, 0, 1), clamp((DIALOGUE.duration - age) / .2, 0, 1));
+      c.fillStyle = '#fff0d94d';
+      c.fillRect(box.x, box.y + 3 * u, box.width, box.height - 6 * u);
+      c.fillRect(box.x + 3 * u, box.y, box.width - 6 * u, box.height);
+      c.fillStyle = '#252224f0';
+      c.fillRect(box.x + 2 * u, box.y + 3 * u, box.width - 4 * u, box.height - 6 * u);
+      c.fillRect(box.x + 3 * u, box.y + 2 * u, box.width - 6 * u, box.height - 4 * u);
+      c.fillRect(box.tailX - 5 * u, box.y + box.height - 2 * u, 10 * u, 6 * u);
+      c.fillRect(box.tailX - 2 * u, box.y + box.height + 4 * u, 4 * u, 3 * u);
+      c.font = box.font;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillStyle = C.white;
+      box.lines.forEach((line, i) => c.fillText(line, box.x + box.width / 2, box.y + 8 * u + (i + .5) * box.lineHeight));
+      c.restore();
     }
     drawEffects(game) {
       const c = this.ctx,

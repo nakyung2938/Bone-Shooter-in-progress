@@ -9,9 +9,9 @@
     hitsToRecover: 2,
     hitScore: 100,
     recoveryScore: 250,
-    shotSpeed: 1800,
-    fireInterval: .09,
-    shotSize: 88,
+    shotSpeed: 1200,
+    fireInterval: .16,
+    shotSize: 100,
     shotFadeStart: .55,
     comboWindow: 3,
     step: 1 / 120,
@@ -39,6 +39,21 @@
   };
   const GROUPS = ['gray', 'white', 'blue'];
   const MEALS = Object.freeze(['meal_porridge', 'meal_bibimbap']);
+  const DIALOGUE = Object.freeze({
+    duration: 2.4,
+    interval: 4.2,
+    headroom: 96,
+    lines: Object.freeze([
+      '죽죽죽 힘내자!!!',
+      '야근 해본죽 있어?',
+      '배고파서 좀비 됨...',
+      '한 그릇만 부탁해!',
+      '퇴근하고 싶죽...',
+      '오늘도 버텨본죽!',
+      '비벼야 사는 거야!',
+      '든든하게 가보자고!'
+    ])
+  });
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   function layoutFor(cssWidth, cssHeight, hudHeight = 80) {
@@ -241,9 +256,10 @@
     return null;
   }
   class Game {
-    constructor(layout, random = Math.random) {
+    constructor(layout, random = Math.random, dialogueRandom = Math.random) {
       this.layout = layout;
       this.random = random;
+      this.dialogueRandom = dialogueRandom;
       this.status = 'ready';
       this.time = 0;
       this.timeLeft = CONFIG.duration;
@@ -266,9 +282,12 @@
       this.firingTarget = null;
       this.nextFireAt = 0;
       this.nextMeal = MEALS[0];
+      this.speech = null;
+      this.lastSpeech = '';
+      this.nextSpeechAt = 1.2;
     }
     start() {
-      Object.assign(this, new Game(this.layout, this.random));
+      Object.assign(this, new Game(this.layout, this.random, this.dialogueRandom));
       this.status = 'playing';
       this.nextMeal = this.pickMeal();
       this.spawn();
@@ -296,6 +315,28 @@
     }
     pickMeal() {
       return MEALS[this.random() < .5 ? 0 : 1];
+    }
+    updateSpeech() {
+      if (this.status !== 'playing') return;
+      if (this.speech) {
+        const speaker = this.enemies.find(e => e.id === this.speech.enemyId);
+        if (!speaker || speaker.hits >= CONFIG.hitsToRecover || this.time - this.speech.startedAt >= DIALOGUE.duration) this.speech = null;
+      }
+      if (this.speech || this.time < this.nextSpeechAt) return;
+      const l = this.layout;
+      const candidates = this.enemies.filter(e => !e.dead && e.hits < CONFIG.hitsToRecover && this.time - e.hitAt > .7 &&
+        enemyPose(e, this.time).y - e.h * .5 >= l.fieldTop + DIALOGUE.headroom * l.unit && e.y + e.h < l.dangerY);
+      if (!candidates.length) {
+        this.nextSpeechAt = this.time + .3;
+        return;
+      }
+      // Cosmetic dialogue must not change food selection or enemy spawn randomness.
+      const speaker = candidates[Math.floor(this.dialogueRandom() * candidates.length)];
+      const lines = DIALOGUE.lines.filter(line => line !== this.lastSpeech);
+      const text = lines[Math.floor(this.dialogueRandom() * lines.length)];
+      this.speech = {enemyId: speaker.id, text, startedAt: this.time};
+      this.lastSpeech = text;
+      this.nextSpeechAt = this.time + DIALOGUE.interval + this.dialogueRandom() * .8;
     }
     fire(target) {
       if (this.status !== 'playing') return null;
@@ -374,6 +415,7 @@
       this.status = 'ended';
       this.endReason = reason;
       this.shots.length = 0;
+      this.speech = null;
       this.accumulator = 0;
       this.emit('end', {
         reason
@@ -479,8 +521,10 @@
         }
       }
       this.enemies = this.enemies.filter(e => !e.dead && (e.hits < CONFIG.hitsToRecover || this.time - e.recoveredAt < .72));
+      this.updateSpeech();
     }
     hit(e, shot, contact) {
+      if (this.speech?.enemyId === e.id) this.speech = null;
       e.hits++;
       e.hitAt = this.time;
       e.kickX = Math.cos(shot.angle) * 14 * this.layout.unit;
@@ -547,6 +591,7 @@
     COLORS,
     GROUPS,
     MEALS,
+    DIALOGUE,
     Game,
     layoutFor,
     screenToGame,
