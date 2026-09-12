@@ -11,6 +11,7 @@
     solveShot,
     trajectoryPoint,
     shotOpacity,
+    projectilePose,
     clamp
   } = Core;
   class Renderer {
@@ -139,20 +140,18 @@
       });
     }
     shot(s) {
-      const c = this.ctx, alpha = shotOpacity(s);
+      const c = this.ctx, alpha = shotOpacity(s), pose = projectilePose(s);
       c.save();
       c.globalAlpha = alpha;
       c.translate(s.x, s.y);
       c.rotate(s.angle);
-      c.fillStyle = '#efbc4860';
-      c.beginPath();
-      c.moveTo(-10, -4);
-      c.lineTo(-45, 0);
-      c.lineTo(-10, 4);
-      c.fill();
+      c.fillStyle = '#efbc4840';
+      c.fillRect(-s.size * .86, -s.size * .13, s.size * .48, s.size * .065);
+      c.fillStyle = '#fffef730';
+      c.fillRect(-s.size * 1.03, s.size * .075, s.size * .58, s.size * .045);
       c.restore();
-      this.sprite('rice_idle', s.x, s.y, s.size, s.size * 210 / 260, {
-        angle: s.angle + .26,
+      this.sprite(pose.sprite, pose.x, pose.y, pose.w, pose.h, {
+        angle: pose.angle,
         alpha
       });
     }
@@ -184,13 +183,50 @@
       const l = game.layout,
         p = l.player,
         elapsed = game.time - game.firedAt;
-      const kick = this.reducedMotion ? 0 : Math.sin(clamp(elapsed / .15, 0, 1) * Math.PI) * .08;
-      this.ellipse(p.x, p.y + p.h * .40, p.w * .43, 8 * l.unit, '#27231e10');
-      this.sprite('bonjuk_bowl', p.x, p.y + kick * 20, p.w * (1 + kick), p.h * (1 - kick));
+      const kick = this.reducedMotion ? 0 : Math.sin(clamp(elapsed / CONFIG.fireInterval, 0, 1) * Math.PI);
+      const c = this.ctx;
+      this.ellipse(p.x, p.y + p.h * .43, p.w * .46, 6 * l.unit, '#00000060');
+      c.save();
+      c.translate(p.x, p.y + kick * 3 * l.unit);
+      c.scale(p.w / 244, p.h / 144);
+      // A compact serving tray replaces the bowl launcher. Its recoil never moves the muzzle.
+      c.fillStyle = '#080808';
+      c.fillRect(-122, 0, 244, 28);
+      c.fillRect(-110, -12, 220, 64);
+      c.fillRect(-94, 50, 24, 10);
+      c.fillRect(70, 50, 24, 10);
+      c.fillStyle = '#d5b88a';
+      c.fillRect(-116, 6, 16, 16);
+      c.fillRect(100, 6, 16, 16);
+      c.fillRect(-104, -6, 208, 21);
+      c.fillStyle = C.white;
+      c.fillRect(-98, -10, 196, 6);
+      c.fillRect(-104, 12, 208, 6);
+      c.fillStyle = '#a42930';
+      c.fillRect(-104, 18, 208, 29);
+      c.fillStyle = C.red;
+      c.fillRect(-98, 18, 196, 5);
+      c.fillStyle = C.yellow;
+      c.fillRect(-92, 30, 20, 5);
+      c.fillRect(72, 30, 20, 5);
+      c.fillStyle = C.white;
+      c.font = '23px Mulmaru, sans-serif';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('본죽', 0, 33);
+      for (const x of [-85, 59]) {
+        c.fillStyle = '#080808';
+        c.fillRect(x - 3, -15, 32, 23);
+        c.fillStyle = '#d5b88a';
+        c.fillRect(x, -12, 26, 17);
+        c.fillStyle = C.white;
+        for (let row = 0; row < 3; row++) c.fillRect(x, -12 + row * 6, 26, 3);
+      }
+      c.restore();
       const origin = muzzle(l);
-      if (game.shots.length === 0 || aim.active) this.sprite('rice_idle', origin.x, origin.y - 9 * l.unit, 55 * l.unit, 55 * l.unit * 210 / 260, {
-        angle: -.30
-      });
+      const loaded = projectilePose({ ...origin, size: 104 * l.unit, sprite: game.nextMeal,
+        angle: aim.active ? solveShot(l, aim.point)?.angle ?? -Math.PI / 2 : -Math.PI / 2 });
+      this.sprite(loaded.sprite, origin.x, origin.y, loaded.w, loaded.h, {angle: loaded.angle});
     }
     drawEffects(game) {
       const c = this.ctx,

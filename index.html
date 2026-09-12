@@ -13,7 +13,7 @@
   <div class="app-shell">
     <header class="brand-header">
       <div class="brand-lockup"><span class="brand-name">본죽</span><span class="brand-divider"></span><span class="game-wordmark">BON-SHOOTER</span></div>
-      <span class="brand-edition">A LITTLE RICE. A LITTLE MIRACLE.</span>
+      <span class="brand-edition">A WARM BOWL. A LITTLE MIRACLE.</span>
       <div class="header-actions">
         <button class="icon-button" id="helpBtn" aria-label="게임 방법" title="게임 방법" aria-haspopup="dialog" aria-controls="helpDialog" type="button">
           <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
@@ -26,10 +26,10 @@
         </button>
       </div>
     </header>
-    <main class="game-arena" id="gameArena" aria-label="본죽 밥알 슈팅 게임">
-      <canvas id="gameCanvas" width="720" height="1280" tabindex="0" aria-label="좀비 쪽 화면을 누르고 있으면 밥알 연속 발사. 손을 떼면 멈춤">이 게임은 Canvas를 지원하는 브라우저가 필요합니다.</canvas>
+    <main class="game-arena" id="gameArena" aria-label="본죽 죽과 비빔밥 슈팅 게임">
+      <canvas id="gameCanvas" width="720" height="1280" tabindex="0" aria-label="좀비 쪽 화면을 누르고 있으면 죽과 비빔밥이 랜덤으로 연속 발사. 손을 떼면 멈춤">이 게임은 Canvas를 지원하는 브라우저가 필요합니다.</canvas>
       <section class="hud" id="hud" aria-label="게임 현황">
-        <div class="readout hp-readout"><span class="readout-label">HP</span><div class="hearts" id="hearts" role="img" aria-label="체력 3 / 3"><span>♥</span><span>♥</span><span>♥</span></div></div>
+        <div class="readout hp-readout"><span class="readout-label">HP</span><div class="hearts" id="hearts" role="img" aria-label="체력 3 / 3"><img src="heart.png" alt="" width="33" height="27"><img src="heart.png" alt="" width="33" height="27"><img src="heart.png" alt="" width="33" height="27"></div></div>
         <div class="readout time-readout"><span class="readout-label">TIME</span><b id="timeText">00:30</b></div>
         <div class="readout score-readout"><span class="readout-label">SCORE</span><b id="scoreText">000000</b></div>
       </section>
@@ -40,7 +40,7 @@
           <p class="tagline">따뜻한 한 발, 든든한 회복.</p>
           <div class="start-art" aria-hidden="true">
             <img class="welcome-zombie" src="zombie_gray_front.png" alt="">
-            <img class="welcome-bowl" src="bonjuk_bowl.png" alt="">
+            <div class="welcome-meals"><img src="meal_porridge.png" alt=""><img src="meal_bibimbap.png" alt=""></div>
             <img class="welcome-human" src="human_white.png" alt="">
           </div>
           <button class="primary-button" id="startBtn" type="button" disabled><span id="startLabel">준비 중</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
@@ -72,15 +72,15 @@
     <div class="help-body">
       <p class="help-goal" id="helpGoal">30초 안에 최고 점수에 도전해요.</p>
       <div class="help-art" aria-hidden="true">
-        <img class="help-bowl" src="bonjuk_bowl.png" alt="">
-        <div class="help-shot"><img src="rice_idle.png" alt=""><svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></div>
+        <div class="help-meals"><img src="meal_porridge.png" alt=""><img src="meal_bibimbap.png" alt=""></div>
+        <svg class="help-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
         <img class="help-character" src="zombie_gray_front.png" alt="">
         <svg class="help-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
         <img class="help-character" src="human_gray.png" alt="">
       </div>
       <ol class="help-steps">
         <li><span class="step-number" aria-hidden="true">01</span><div><strong>좀비 쪽을 꾹 누르기</strong><p>좀비가 있는 곳을 터치하거나 클릭해요.</p></div></li>
-        <li><span class="step-number" aria-hidden="true">02</span><div><strong>누르고 있으면 우다다!</strong><p>드래그 없이 밥알이 연속 발사돼요. 손을 떼면 멈춰요.</p></div></li>
+        <li><span class="step-number" aria-hidden="true">02</span><div><strong>죽과 비빔밥이 우다다!</strong><p>누르고 있으면 죽과 비빔밥이 랜덤으로 나가요. 손을 떼면 멈춰요.</p></div></li>
         <li><span class="step-number" aria-hidden="true">03</span><div><strong>두 번 맞혀 회복시키기</strong><p id="helpRecovery">같은 좀비를 두 번 맞히면 사람으로 회복돼요.</p></div></li>
       </ol>
       <div class="help-rules">

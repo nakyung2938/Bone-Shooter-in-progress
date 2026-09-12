@@ -11,6 +11,7 @@
     recoveryScore: 250,
     shotSpeed: 1800,
     fireInterval: .09,
+    shotSize: 88,
     shotFadeStart: .55,
     comboWindow: 3,
     step: 1 / 120,
@@ -37,6 +38,7 @@
     ink: '#fff0d9'
   };
   const GROUPS = ['gray', 'white', 'blue'];
+  const MEALS = Object.freeze(['meal_porridge', 'meal_bibimbap']);
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   function layoutFor(cssWidth, cssHeight, hudHeight = 80) {
@@ -45,13 +47,13 @@
     const width = mode === 'desktopLandscape' ? 900 * aspect : mode === 'tablet' ? 900 : 720;
     const height = width / aspect;
     const unit = mode === 'desktopLandscape' ? .88 : 1;
-    const bowlWidth = 204 * unit,
-      bowlHeight = bowlWidth * 210 / 260;
+    const trayWidth = 244 * unit,
+      trayHeight = 144 * unit;
     const player = {
       x: width / 2,
-      y: height - bowlHeight * .57 - 24,
-      w: bowlWidth,
-      h: bowlHeight
+      y: height - trayHeight * .57 - 24,
+      w: trayWidth,
+      h: trayHeight
     };
     return {
       mode,
@@ -62,7 +64,7 @@
       cssWidth,
       cssHeight,
       fieldTop: hudHeight * width / cssWidth + 20,
-      dangerY: player.y - bowlHeight * .60,
+      dangerY: player.y - trayHeight * .60,
       enemyHeight: 170 * unit,
       maxEnemies: mode === 'desktopLandscape' ? 4 : 3
     };
@@ -127,8 +129,20 @@
       sprite: e.sprite
     };
   }
-  function ricePolygon(shot) {
-    return new SAT.Polygon(new SAT.Vector(shot.x, shot.y), shapes.rice_idle.hull.map(([x, y]) => new SAT.Vector(x * shot.size, y * shot.size * 210 / 260))).setAngle(shot.angle + .26);
+  function projectilePose(shot) {
+    return {
+      x: shot.x,
+      y: shot.y,
+      w: shot.size,
+      h: shot.size * 210 / 260,
+      sprite: shot.sprite,
+      // Keep the food readable; rendering and collision share the same slight tilt.
+      angle: clamp(shot.angle + Math.PI / 2, -.45, .45) * .65
+    };
+  }
+  function projectilePolygon(shot) {
+    const pose = projectilePose(shot);
+    return new SAT.Polygon(new SAT.Vector(pose.x, pose.y), shapes[pose.sprite].hull.map(([x, y]) => new SAT.Vector(x * pose.w, y * pose.h))).setAngle(pose.angle);
   }
   function contactPoint(polygon, left, top, width, height) {
     const right = left + width,
@@ -192,7 +206,7 @@
   function sweepHit(shot, end, from, to) {
     const travel = Math.hypot(end.x - shot.x, end.y - shot.y) + Math.hypot(to.x - from.x, to.y - from.y);
     const steps = Math.max(1, Math.ceil(travel / 2)),
-      polygon = ricePolygon(shot);
+      polygon = projectilePolygon(shot);
     const at = t => {
       polygon.pos.x = lerp(shot.x, end.x, t);
       polygon.pos.y = lerp(shot.y, end.y, t);
@@ -251,10 +265,12 @@
       this.firedAt = -Infinity;
       this.firingTarget = null;
       this.nextFireAt = 0;
+      this.nextMeal = MEALS[0];
     }
     start() {
       Object.assign(this, new Game(this.layout, this.random));
       this.status = 'playing';
+      this.nextMeal = this.pickMeal();
       this.spawn();
       this.spawnIn = 1.35;
     }
@@ -278,6 +294,9 @@
     drainEvents() {
       return this.events.splice(0);
     }
+    pickMeal() {
+      return MEALS[this.random() < .5 ? 0 : 1];
+    }
     fire(target) {
       if (this.status !== 'playing') return null;
       const solution = solveShot(this.layout, target);
@@ -287,12 +306,14 @@
         id: this.nextId++,
         age: 0,
         travelled: 0,
-        size: 64 * this.layout.unit
+        size: CONFIG.shotSize * this.layout.unit,
+        sprite: this.nextMeal
       };
       shot.maxDistance = projectileRange(this.layout, shot.angle, shot.size);
       this.shots.push(shot);
       this.fired++;
       this.firedAt = this.time;
+      this.nextMeal = this.pickMeal();
       this.emit('fire', {
         x: shot.x,
         y: shot.y,
@@ -525,6 +546,7 @@
     CONFIG,
     COLORS,
     GROUPS,
+    MEALS,
     Game,
     layoutFor,
     screenToGame,
@@ -535,7 +557,8 @@
     shotOpacity,
     muzzle,
     enemyPose,
-    ricePolygon,
+    projectilePose,
+    projectilePolygon,
     intersectsSprite,
     sweepHit,
     clamp,
