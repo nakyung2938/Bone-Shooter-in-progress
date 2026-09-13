@@ -80,23 +80,55 @@
       c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
       c.fill();
     }
+    backdropCrop(layout, fullBleed = false) {
+      const img = this.assets.background;
+      if (!img) return null;
+      const top = fullBleed ? 0 : layout.fieldTop - 20;
+      const height = layout.height - top;
+      const scale = Math.max(layout.width / img.width, height / img.height);
+      const sw = layout.width / scale, sh = height / scale;
+      // Keep the shop and lamp in view on wide screens without stretching the street.
+      const anchor = layout.mode === 'desktopLandscape' ? .1 : 0;
+      return {sx:(img.width - sw) / 2, sy:(img.height - sh) * anchor, sw, sh, top, height};
+    }
+    drawBackdrop(game) {
+      const c = this.ctx, l = game.layout;
+      const fullBleed = game.status === 'ready' || game.status === 'ended';
+      const crop = this.backdropCrop(l, fullBleed);
+      c.fillStyle = C.cream;
+      c.fillRect(0, 0, l.width, l.height);
+      if (crop) {
+        c.drawImage(this.assets.background, crop.sx, crop.sy, crop.sw, crop.sh, 0, crop.top, l.width, crop.height);
+        c.fillStyle = '#59307219';
+        c.fillRect(0, crop.top, l.width, crop.height);
+      }
+      if (fullBleed) return;
+      // This boundary is decorative only. It never shifts the world or pointer transform.
+      c.fillStyle = '#100b19a3';
+      c.fillRect(0, l.dangerY, l.width, l.height - l.dangerY);
+      c.save();
+      c.strokeStyle = game.time - game.damageAt < .16 ? C.red : '#b487de70';
+      c.lineWidth = 2 * l.unit;
+      c.setLineDash([7 * l.unit, 8 * l.unit]);
+      c.beginPath();
+      c.moveTo(16 * l.unit, l.dangerY);
+      c.lineTo(l.width - 16 * l.unit, l.dangerY);
+      c.stroke();
+      c.restore();
+    }
     draw(game, aim) {
       const l = game.layout,
         c = this.ctx;
       c.setTransform(this.canvas.width / l.width, 0, 0, this.canvas.height / l.height, 0, 0);
       c.imageSmoothingEnabled = false;
       c.clearRect(0, 0, l.width, l.height);
-      c.fillStyle = C.cream;
-      c.fillRect(0, 0, l.width, l.height);
-      // The bottom band is the player area; neither the world nor the aiming guide shakes.
-      c.fillStyle = '#211b1a';
-      c.fillRect(0, l.dangerY, l.width, l.height - l.dangerY);
-      c.fillStyle = game.time - game.damageAt < .16 ? '#f05a55b0' : '#f05a5538';
-      c.fillRect(0, l.dangerY, l.width, 2 * l.unit);
+      this.drawBackdrop(game);
+      if (game.status === 'ready' || game.status === 'ended') return;
       c.save();
       c.beginPath();
       c.rect(0, l.fieldTop - 15, l.width, l.height - l.fieldTop + 15);
       c.clip();
+      this.drawSwipeHint(game, aim);
       for (const e of [...game.enemies].sort((a, b) => a.y - b.y)) this.enemy(e, game);
       this.drawSpeech(game, aim);
       for (const s of game.shots) this.shot(s);
@@ -108,7 +140,7 @@
     enemy(e, game) {
       const p = enemyPose(e, game.time),
         since = game.time - e.hitAt;
-      this.ellipse(p.x, p.y + p.h * .48, p.w * .40, 5 * game.layout.unit, '#27231e10');
+      this.ellipse(p.x, p.y + p.h * .48, p.w * .40, 7 * game.layout.unit, '#00000080');
       if (e.hits >= CONFIG.hitsToRecover) {
         const age = game.time - e.recoveredAt;
         if (age < .1) this.sprite(p.sprite, p.x, p.y, p.w, p.h, {
@@ -157,6 +189,60 @@
         alpha
       });
     }
+    swipeHintLayout(game, aim = {active: false}) {
+      if (game.status !== 'playing' || game.fired > 0 || aim.active || game.time >= 4.5) return null;
+      const l = game.layout, u = l.unit;
+      const span = Math.min(l.width * .62, 560 * u);
+      const radius = 24 * u, y = l.dangerY - 168 * u;
+      const left = l.player.x - span / 2, right = l.player.x + span / 2;
+      const bounds = {x:left - radius,y:y - radius,w:span + radius * 2,h:radius * 2};
+      if (bounds.y < l.fieldTop || bounds.y + bounds.h >= l.dangerY) return null;
+      // This is an onboarding cue, never an input surface or a projectile trajectory.
+      for (const e of game.enemies) {
+        const p = enemyPose(e, game.time);
+        if (p.x + p.w / 2 > bounds.x && p.x - p.w / 2 < bounds.x + bounds.w &&
+            p.y + p.h / 2 > bounds.y && p.y - p.h / 2 < bounds.y + bounds.h) return null;
+      }
+      const offset = this.reducedMotion ? 0 : Math.sin((game.time - .25) * Math.PI / 1.2) * span * .38;
+      const alpha = clamp((game.time - .2) / .3, 0, 1) * clamp((4.5 - game.time) / .65, 0, 1);
+      return {left, right, y, radius, center:l.player.x, touchX:l.player.x + offset, alpha, bounds};
+    }
+    drawSwipeHint(game, aim) {
+      const hint = this.swipeHintLayout(game, aim);
+      if (!hint || hint.alpha <= 0) return;
+      const c = this.ctx, u = game.layout.unit;
+      c.save();
+      c.globalAlpha = hint.alpha * .38;
+      c.strokeStyle = C.ink;
+      c.lineWidth = 2.5 * u;
+      c.lineCap = 'round';
+      c.lineJoin = 'round';
+      c.beginPath();
+      c.moveTo(hint.left, hint.y);
+      c.lineTo(hint.right, hint.y);
+      c.moveTo(hint.left + 12 * u, hint.y - 11 * u);
+      c.lineTo(hint.left, hint.y);
+      c.lineTo(hint.left + 12 * u, hint.y + 11 * u);
+      c.moveTo(hint.right - 12 * u, hint.y - 11 * u);
+      c.lineTo(hint.right, hint.y);
+      c.lineTo(hint.right - 12 * u, hint.y + 11 * u);
+      c.stroke();
+      c.globalAlpha = hint.alpha * .16;
+      for (const x of [hint.left, hint.center, hint.right]) {
+        c.beginPath();
+        c.arc(x, hint.y, hint.radius, 0, Math.PI * 2);
+        c.stroke();
+      }
+      c.globalAlpha = hint.alpha * .7;
+      c.fillStyle = C.white;
+      c.beginPath();
+      c.arc(hint.touchX, hint.y, 6 * u, 0, Math.PI * 2);
+      c.fill();
+      c.beginPath();
+      c.arc(hint.touchX, hint.y, hint.radius, 0, Math.PI * 2);
+      c.stroke();
+      c.restore();
+    }
     guide(game, aim) {
       if (!aim.active) return;
       const l = game.layout,
@@ -166,14 +252,14 @@
         length = Math.min(s.distance, l.height * .27, 270 * l.unit);
       const end = trajectoryPoint(s, length / Math.hypot(s.vx, s.vy));
       c.save();
-      c.strokeStyle = '#f05a5560';
+      c.strokeStyle = '#cba8eb90';
       c.lineWidth = 2.5 * l.unit;
       c.lineCap = 'round';
       c.beginPath();
       c.moveTo(s.x, s.y);
       c.lineTo(end.x, end.y);
       c.stroke();
-      this.ellipse(end.x, end.y, 3 * l.unit, 3 * l.unit, C.red);
+      this.ellipse(end.x, end.y, 3 * l.unit, 3 * l.unit, C.violet);
       c.strokeStyle = '#efbc48c0';
       c.lineWidth = 1.6 * l.unit;
       c.beginPath();
@@ -187,44 +273,17 @@
         elapsed = game.time - game.firedAt;
       const kick = this.reducedMotion ? 0 : Math.sin(clamp(elapsed / CONFIG.fireInterval, 0, 1) * Math.PI);
       const c = this.ctx;
-      this.ellipse(p.x, p.y + p.h * .43, p.w * .46, 6 * l.unit, '#00000060');
       c.save();
-      c.translate(p.x, p.y + kick * 3 * l.unit);
-      c.scale(p.w / 244, p.h / 144);
-      // A compact serving tray replaces the bowl launcher. Its recoil never moves the muzzle.
-      c.fillStyle = '#080808';
-      c.fillRect(-122, 0, 244, 28);
-      c.fillRect(-110, -12, 220, 64);
-      c.fillRect(-94, 50, 24, 10);
-      c.fillRect(70, 50, 24, 10);
-      c.fillStyle = '#d5b88a';
-      c.fillRect(-116, 6, 16, 16);
-      c.fillRect(100, 6, 16, 16);
-      c.fillRect(-104, -6, 208, 21);
-      c.fillStyle = C.white;
-      c.fillRect(-98, -10, 196, 6);
-      c.fillRect(-104, 12, 208, 6);
-      c.fillStyle = '#a42930';
-      c.fillRect(-104, 18, 208, 29);
-      c.fillStyle = C.red;
-      c.fillRect(-98, 18, 196, 5);
-      c.fillStyle = C.yellow;
-      c.fillRect(-92, 30, 20, 5);
-      c.fillRect(72, 30, 20, 5);
-      c.fillStyle = C.white;
-      c.font = '23px Mulmaru, sans-serif';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.fillText('본죽', 0, 33);
-      for (const x of [-85, 59]) {
-        c.fillStyle = '#080808';
-        c.fillRect(x - 3, -15, 32, 23);
-        c.fillStyle = '#d5b88a';
-        c.fillRect(x, -12, 26, 17);
-        c.fillStyle = C.white;
-        for (let row = 0; row < 3; row++) c.fillRect(x, -12 + row * 6, 26, 3);
-      }
+      c.fillStyle = '#0a070c';
+      c.fillRect(p.x - 142 * l.unit, p.y + 30 * l.unit, 284 * l.unit, 35 * l.unit);
+      c.fillStyle = '#3b2c28';
+      c.fillRect(p.x - 134 * l.unit, p.y + 36 * l.unit, 268 * l.unit, 21 * l.unit);
+      c.fillStyle = '#594337';
+      c.fillRect(p.x - 128 * l.unit, p.y + 37 * l.unit, 256 * l.unit, 3 * l.unit);
       c.restore();
+      this.ellipse(p.x, p.y + p.h * .43, p.w * .46, 6 * l.unit, '#00000060');
+      // The original branded bowl is the launcher. Recoil moves its art only; muzzle stays on the shared origin.
+      this.sprite('bonjuk_bowl', p.x, p.y - 5 * l.unit + kick * 3 * l.unit, 230 * l.unit, 186 * l.unit);
       const origin = muzzle(l);
       const loaded = projectilePose({ ...origin, size: 104 * l.unit, sprite: game.nextMeal,
         angle: aim.active ? solveShot(l, aim.point)?.angle ?? -Math.PI / 2 : -Math.PI / 2 });
@@ -275,10 +334,10 @@
       const c = this.ctx, u = game.layout.unit, age = game.time - game.speech.startedAt;
       c.save();
       c.globalAlpha = Math.min(clamp(age / .12, 0, 1), clamp((DIALOGUE.duration - age) / .2, 0, 1));
-      c.fillStyle = '#fff0d94d';
+      c.fillStyle = '#b487dea6';
       c.fillRect(box.x, box.y + 3 * u, box.width, box.height - 6 * u);
       c.fillRect(box.x + 3 * u, box.y, box.width - 6 * u, box.height);
-      c.fillStyle = '#252224f0';
+      c.fillStyle = '#140f1ef2';
       c.fillRect(box.x + 2 * u, box.y + 3 * u, box.width - 4 * u, box.height - 6 * u);
       c.fillRect(box.x + 3 * u, box.y + 2 * u, box.width - 6 * u, box.height - 4 * u);
       c.fillRect(box.tailX - 5 * u, box.y + box.height - 2 * u, 10 * u, 6 * u);
@@ -345,7 +404,7 @@
         const x = clamp(e.popupX ?? e.x, 60 * l.unit, l.width - 60 * l.unit);
         const y = Math.max(l.fieldTop + 15, (e.popupY ?? e.y) - age * 40);
         c.strokeText(text, x, y);
-        c.fillStyle = C.red;
+        c.fillStyle = e.type === 'damage' ? C.red : C.yellow;
         c.fillText(text, x, y);
         if (e.combo >= 2) {
           c.font = `${15 * l.unit}px Mulmaru, sans-serif`;

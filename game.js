@@ -12,7 +12,7 @@
     arena = $('gameArena'),
     hud = $('hud');
   const assets = {};
-  const paths = [...window.BonGame.MEALS, 'heart', ...['gray', 'white', 'blue'].flatMap(color => [`human_${color}`, ...['front', 'side_a', 'side_b'].map(side => `zombie_${color}_${side}`)])];
+  const paths = ['background', 'bonjuk_bowl', ...window.BonGame.MEALS, 'heart', ...['gray', 'white', 'blue'].flatMap(color => [`human_${color}`, ...['front', 'side_a', 'side_b'].map(side => `zombie_${color}_${side}`)])];
   const game = new Game(layoutFor(390, 780));
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const renderer = new window.BonRenderer(canvas, assets, reducedMotion);

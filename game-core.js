@@ -32,7 +32,8 @@
   });
   const COLORS = {
     red: '#f05a55',
-    cream: '#151516',
+    cream: '#0b090f',
+    violet: '#b487de',
     white: '#fffef7',
     yellow: '#efbc48',
     ink: '#fff0d9'

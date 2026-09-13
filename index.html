@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#151516">
+  <meta name="theme-color" content="#09070c">
   <meta name="description" content="본죽 BON-SHOOTER. 따뜻한 한 발로 일상을 되찾는 브랜드 아케이드.">
   <title>BON-SHOOTER | 본죽</title>
   <link rel="preload" href="Mulmaru.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260913-night-alley">
 </head>
 <body>
   <div class="app-shell">
     <header class="brand-header">
-      <div class="brand-lockup"><span class="brand-name">본죽</span><span class="brand-divider"></span><span class="game-wordmark">BON-SHOOTER</span></div>
-      <span class="brand-edition">A WARM BOWL. A LITTLE MIRACLE.</span>
+      <div class="brand-lockup"><img class="brand-bowl" src="bonjuk_bowl.png" alt="" width="40" height="33"><span class="brand-name">본죽</span></div>
+      <span class="game-wordmark">BON-SHOOTER</span>
       <div class="header-actions">
         <button class="icon-button" id="helpBtn" aria-label="게임 방법" title="게임 방법" aria-haspopup="dialog" aria-controls="helpDialog" type="button">
           <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
@@ -35,8 +35,8 @@
       </section>
       <section class="overlay start-screen" id="startScreen" aria-labelledby="startTitle">
         <div class="start-content">
-          <p class="eyebrow">본죽의 작은 아케이드</p>
-          <h1 id="startTitle">BON<br>SHOOTER<span class="title-dot">.</span></h1>
+          <p class="eyebrow">BONJUK NIGHT ARCADE</p>
+          <h1 id="startTitle">BON<span class="title-dash">-</span><br>SHOOTER</h1>
           <p class="tagline">따뜻한 한 발, 든든한 회복.</p>
           <div class="start-art" aria-hidden="true">
             <img class="welcome-zombie" src="zombie_gray_front.png" alt="">
@@ -46,7 +46,7 @@
           <button class="primary-button" id="startBtn" type="button" disabled><span id="startLabel">준비 중</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
           <p class="load-status" id="loadStatus" role="status"></p>
         </div>
-        <span class="edition-stamp" aria-hidden="true">BONJUK ARCADE / 01</span>
+        <span class="edition-stamp" aria-hidden="true">오늘도 든든하게, 본죽</span>
       </section>
       <section class="overlay pause-screen" id="pauseScreen" aria-labelledby="pauseTitle" hidden>
         <p class="eyebrow">잠깐 쉬어가요</p><h2 id="pauseTitle">PAUSED</h2>
@@ -93,8 +93,8 @@
   </dialog>
   <script src="sat.js"></script>
   <script src="hit-shapes.js"></script>
-  <script src="game-core.js?v=20260913-dialogue"></script>
-  <script src="game-renderer.js?v=20260913-dialogue"></script>
-  <script src="game.js"></script>
+  <script src="game-core.js?v=20260913-night-alley"></script>
+  <script src="game-renderer.js?v=20260913-night-alley"></script>
+  <script src="game.js?v=20260913-night-alley"></script>
 </body>
 </html>
