@@ -12,7 +12,7 @@
     arena = $('gameArena'),
     hud = $('hud');
   const assets = {};
-  const paths = ['background', 'bonjuk_bowl', ...window.BonGame.MEALS, 'heart', ...['gray', 'white', 'blue'].flatMap(color => [`human_${color}`, ...['front', 'side_a', 'side_b'].map(side => `zombie_${color}_${side}`)])];
+  const paths = ['background_violet', 'serving_tray', ...window.BonGame.MEALS, 'heart_violet', ...['gray', 'white', 'blue'].flatMap(color => [`human_${color}`, ...['front', 'side_a', 'side_b'].map(side => `zombie_${color}_${side}`)])];
   const game = new Game(layoutFor(390, 780));
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const renderer = new window.BonRenderer(canvas, assets, reducedMotion);
@@ -150,8 +150,9 @@
       tone(920, 230, .035, .025, 0, 'square');
     }
     if (type === 'recovery') {
-      tone(660, 660, .09, .04, .035);
-      tone(880, 880, .13, .035, .10);
+      tone(523.25, 523.25, .11, .035, .04);
+      tone(659.25, 659.25, .12, .032, .12);
+      tone(783.99, 783.99, .20, .03, .20);
     }
     if (type === 'damage') tone(150, 65, .15, .055);
   }

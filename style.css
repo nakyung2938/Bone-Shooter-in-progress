@@ -3,7 +3,7 @@
   font-style: normal; font-weight: 400 900; font-display: swap;
 }
 :root {
-  --red: #f05a55; --cream: #0b090f; --white: #fffef7; --yellow: #efbc48;
+  --cream: #0b090f; --white: #fffef7; --yellow: #efbc48;
   --ink: #fff0d9; --muted: #b8abc6; --line: #493350; --violet: #b487de;
   color-scheme: dark;
   font-family: "Mulmaru", "Apple SD Gothic Neo", sans-serif;
@@ -25,7 +25,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .brand-header { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 0 2px; min-width: 0; }
 .brand-lockup { display: flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; }
 .brand-bowl { width: 32px; height: 30px; }
-.brand-name { color: var(--red); font-size: 21px; line-height: 1; }
+.brand-name { color: var(--violet); font-size: 21px; line-height: 1; }
 .game-wordmark { font-size: 18px; text-align: center; white-space: nowrap; color: var(--white); text-shadow: 1px 2px 0 #653e80; }
 .header-actions { display: flex; gap: 0; justify-self: end; }
 .icon-button { display: grid; place-items: center; width: 36px; height: 44px; border: 0; border-radius: 0; background: transparent; }
@@ -40,7 +40,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .readout-label { font-size: 11px; color: var(--violet); line-height: 1; }
 .readout b { font-size: 27px; line-height: 1; font-weight: 400; font-variant-numeric: tabular-nums; }
 .time-readout { text-align: center; }
-.time-readout.urgent b { color: var(--red); }
+.time-readout.urgent b { color: var(--violet); }
 .score-readout { text-align: right; }
 .hearts { display: flex; align-items: center; gap: 0; height: 27px; line-height: 1; }
 .hearts img { width: 33px; height: 27px; flex: none; transition: opacity .15s; }
@@ -68,7 +68,7 @@ h1 { color: var(--white); font-size: 64px; line-height: .98; margin-top: 18px; t
 .primary-button:hover { background: #684085; }
 .primary-button:active { transform: translateY(3px); }
 .primary-button svg { width: 25px; height: 25px; }
-.load-status { min-height: 16px; margin: 10px 0 0; color: var(--red); font-size: 12px; }
+.load-status { min-height: 16px; margin: 10px 0 0; color: var(--violet); font-size: 12px; }
 .edition-stamp { position: absolute; bottom: 20px; color: var(--muted); font-size: 10px; }
 .pause-screen { background: #09060fe6; gap: 24px; }
 h2 { font-size: 46px; color: var(--white); line-height: 1; text-shadow: 2px 3px 0 #6b4287; }

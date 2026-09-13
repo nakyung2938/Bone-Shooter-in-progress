@@ -7,7 +7,7 @@
   <meta name="description" content="본죽 BON-SHOOTER. 따뜻한 한 발로 일상을 되찾는 브랜드 아케이드.">
   <title>BON-SHOOTER | 본죽</title>
   <link rel="preload" href="Mulmaru.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="style.css?v=20260913-night-alley">
+  <link rel="stylesheet" href="style.css?v=20260913-arcade-polish">
 </head>
 <body>
   <div class="app-shell">
@@ -29,7 +29,7 @@
     <main class="game-arena" id="gameArena" aria-label="본죽 죽과 비빔밥 슈팅 게임">
       <canvas id="gameCanvas" width="720" height="1280" tabindex="0" aria-label="좀비 쪽 화면을 누르고 있으면 죽과 비빔밥이 랜덤으로 연속 발사. 손을 떼면 멈춤">이 게임은 Canvas를 지원하는 브라우저가 필요합니다.</canvas>
       <section class="hud" id="hud" aria-label="게임 현황">
-        <div class="readout hp-readout"><span class="readout-label">HP</span><div class="hearts" id="hearts" role="img" aria-label="체력 3 / 3"><img src="heart.png" alt="" width="33" height="27"><img src="heart.png" alt="" width="33" height="27"><img src="heart.png" alt="" width="33" height="27"></div></div>
+        <div class="readout hp-readout"><span class="readout-label">HP</span><div class="hearts" id="hearts" role="img" aria-label="체력 3 / 3"><img src="heart_violet.png" alt="" width="33" height="27"><img src="heart_violet.png" alt="" width="33" height="27"><img src="heart_violet.png" alt="" width="33" height="27"></div></div>
         <div class="readout time-readout"><span class="readout-label">TIME</span><b id="timeText">00:30</b></div>
         <div class="readout score-readout"><span class="readout-label">SCORE</span><b id="scoreText">000000</b></div>
       </section>
@@ -93,8 +93,8 @@
   </dialog>
   <script src="sat.js"></script>
   <script src="hit-shapes.js"></script>
-  <script src="game-core.js?v=20260913-night-alley"></script>
-  <script src="game-renderer.js?v=20260913-night-alley"></script>
-  <script src="game.js?v=20260913-night-alley"></script>
+  <script src="game-core.js?v=20260913-arcade-polish"></script>
+  <script src="game-renderer.js?v=20260913-arcade-polish"></script>
+  <script src="game.js?v=20260913-arcade-polish"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@
     hitsToRecover: 2,
     hitScore: 100,
     recoveryScore: 250,
+    recoveryDuration: 1.65,
     shotSpeed: 1200,
     fireInterval: .16,
     shotSize: 100,
@@ -31,7 +32,6 @@
     }]
   });
   const COLORS = {
-    red: '#f05a55',
     cream: '#0b090f',
     violet: '#b487de',
     white: '#fffef7',
@@ -44,14 +44,15 @@
     duration: 2.4,
     interval: 4.2,
     headroom: 96,
+    reactionDelay: .72,
+    hitLines: Object.freeze(['오... 좀 살겠죽!', '기운이 돌아온죽!']),
+    recoveryLines: Object.freeze(['본죽 먹고 회복 완료!', '든든하게 살아났죽!', '본죽이랑 죽이 잘 맞네!']),
     lines: Object.freeze([
       '죽죽죽 힘내자!!!',
       '야근 해본죽 있어?',
       '배고파서 좀비 됨...',
-      '한 그릇만 부탁해!',
       '퇴근하고 싶죽...',
       '오늘도 버텨본죽!',
-      '비벼야 사는 거야!',
       '든든하게 가보자고!'
     ])
   });
@@ -144,6 +145,16 @@
       h: e.h * (1 - squash * .65),
       sprite: e.sprite
     };
+  }
+  function recoveryPose(e, time, unit, reducedMotion = false) {
+    const age = Math.max(0, time - e.recoveredAt);
+    const jump = reducedMotion ? 0 : Math.sin(clamp((age - .08) / .5, 0, 1) * Math.PI) * 28 * unit;
+    const squash = reducedMotion ? 0 : Math.sin(clamp(age / .18, 0, 1) * Math.PI) * .1 +
+      Math.sin(clamp((age - .58) / .16, 0, 1) * Math.PI) * .05;
+    const h = e.h * (1 - squash), w = e.w * (1 + squash);
+    return {x: e.x, y: e.y + (e.h - h) / 2 - jump, w, h,
+      sprite: `human_${e.group}`,
+      alpha: clamp((age - .04) / .1, 0, 1) * clamp((CONFIG.recoveryDuration - age) / .24, 0, 1)};
   }
   function projectilePose(shot) {
     return {
@@ -281,9 +292,11 @@
       this.damageAt = -Infinity;
       this.firedAt = -Infinity;
       this.firingTarget = null;
+      this.aimDirection = {x: 0, y: -1};
       this.nextFireAt = 0;
       this.nextMeal = MEALS[0];
       this.speech = null;
+      this.pendingSpeech = null;
       this.lastSpeech = '';
       this.nextSpeechAt = 1.2;
     }
@@ -317,13 +330,39 @@
     pickMeal() {
       return MEALS[this.random() < .5 ? 0 : 1];
     }
+    showSpeech(speaker, kind = 'idle') {
+      const pool = kind === 'hit' ? DIALOGUE.hitLines : kind === 'recovery' ? DIALOGUE.recoveryLines : DIALOGUE.lines;
+      const lines = pool.filter(line => line !== this.lastSpeech);
+      const text = lines[Math.floor(this.dialogueRandom() * lines.length)];
+      const duration = kind === 'recovery' ? CONFIG.recoveryDuration - DIALOGUE.reactionDelay : DIALOGUE.duration;
+      this.speech = {enemyId: speaker.id, text, kind, duration, startedAt: this.time};
+      this.lastSpeech = text;
+      this.nextSpeechAt = this.time + DIALOGUE.interval + this.dialogueRandom() * .8;
+    }
+    queueReaction(speaker, kind) {
+      // A short recovery line may finish before another character takes over the conversation.
+      if (this.speech?.kind === 'recovery' && this.speech.enemyId !== speaker.id) return;
+      if (this.pendingSpeech?.kind === 'recovery' && this.pendingSpeech.enemyId !== speaker.id) return;
+      this.speech = null;
+      this.pendingSpeech = {enemyId: speaker.id, kind, readyAt: this.time + DIALOGUE.reactionDelay};
+    }
     updateSpeech() {
       if (this.status !== 'playing') return;
       if (this.speech) {
         const speaker = this.enemies.find(e => e.id === this.speech.enemyId);
-        if (!speaker || speaker.hits >= CONFIG.hitsToRecover || this.time - this.speech.startedAt >= DIALOGUE.duration) this.speech = null;
+        if (!speaker || speaker.dead || (speaker.hits >= CONFIG.hitsToRecover && this.speech.kind !== 'recovery') ||
+            this.time - this.speech.startedAt >= (this.speech.duration ?? DIALOGUE.duration)) this.speech = null;
       }
-      if (this.speech || this.time < this.nextSpeechAt) return;
+      if (this.pendingSpeech) {
+        const pending = this.pendingSpeech;
+        const speaker = this.enemies.find(e => e.id === pending.enemyId && !e.dead);
+        if (!speaker || (speaker.hits >= CONFIG.hitsToRecover && pending.kind !== 'recovery')) this.pendingSpeech = null;
+        else if (this.time + 1e-7 >= pending.readyAt) {
+          this.showSpeech(speaker, pending.kind);
+          this.pendingSpeech = null;
+        }
+      }
+      if (this.speech || this.pendingSpeech || this.time < this.nextSpeechAt) return;
       const l = this.layout;
       const candidates = this.enemies.filter(e => !e.dead && e.hits < CONFIG.hitsToRecover && this.time - e.hitAt > .7 &&
         enemyPose(e, this.time).y - e.h * .5 >= l.fieldTop + DIALOGUE.headroom * l.unit && e.y + e.h < l.dangerY);
@@ -333,16 +372,13 @@
       }
       // Cosmetic dialogue must not change food selection or enemy spawn randomness.
       const speaker = candidates[Math.floor(this.dialogueRandom() * candidates.length)];
-      const lines = DIALOGUE.lines.filter(line => line !== this.lastSpeech);
-      const text = lines[Math.floor(this.dialogueRandom() * lines.length)];
-      this.speech = {enemyId: speaker.id, text, startedAt: this.time};
-      this.lastSpeech = text;
-      this.nextSpeechAt = this.time + DIALOGUE.interval + this.dialogueRandom() * .8;
+      this.showSpeech(speaker);
     }
     fire(target) {
       if (this.status !== 'playing') return null;
       const solution = solveShot(this.layout, target);
       if (!solution) return null;
+      this.aimDirection = {x: Math.cos(solution.angle), y: Math.sin(solution.angle)};
       const shot = {
         ...solution,
         id: this.nextId++,
@@ -364,11 +400,13 @@
       return shot;
     }
     setFiring(target) {
-      if (this.status !== 'playing' || !target || !solveShot(this.layout, target)) {
+      const solution = target && solveShot(this.layout, target);
+      if (this.status !== 'playing' || !solution) {
         this.stopFiring();
         return;
       }
       const justPressed = this.firingTarget === null;
+      this.aimDirection = {x: Math.cos(solution.angle), y: Math.sin(solution.angle)};
       this.firingTarget = { ...target };
       if (justPressed) {
         this.fire(this.firingTarget);
@@ -417,6 +455,7 @@
       this.endReason = reason;
       this.shots.length = 0;
       this.speech = null;
+      this.pendingSpeech = null;
       this.accumulator = 0;
       this.emit('end', {
         reason
@@ -521,7 +560,7 @@
           }
         }
       }
-      this.enemies = this.enemies.filter(e => !e.dead && (e.hits < CONFIG.hitsToRecover || this.time - e.recoveredAt < .72));
+      this.enemies = this.enemies.filter(e => !e.dead && (e.hits < CONFIG.hitsToRecover || this.time - e.recoveredAt < CONFIG.recoveryDuration));
       this.updateSpeech();
     }
     hit(e, shot, contact) {
@@ -540,12 +579,13 @@
         this.score += CONFIG.recoveryScore;
         this.recovered++;
       }
+      this.queueReaction(e, recovered ? 'recovery' : 'hit');
       this.emit(recovered ? 'recovery' : 'hit', {
         ...contact,
         enemyId: e.id,
         angle: shot.angle,
         popupX: e.x,
-        popupY: e.y - e.h * .45,
+        popupY: e.y - e.h * .5 - (recovered ? 58 : 40) * this.layout.unit,
         combo: this.combo,
         score: CONFIG.hitScore + (recovered ? CONFIG.recoveryScore : 0)
       });
@@ -603,6 +643,7 @@
     shotOpacity,
     muzzle,
     enemyPose,
+    recoveryPose,
     projectilePose,
     projectilePolygon,
     intersectsSprite,
