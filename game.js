@@ -36,6 +36,71 @@
     lastLives = -1,
     lastSecond = -1;
   const helpDialog = $('helpDialog');
+  const music = $('backgroundMusic');
+  const cheerVoice = $('characterVoice');
+  cheerVoice.volume = .6;
+  const cheerTiming = {start: 5, end: 11};
+  let cheerSpoken = false, cheerSpeaking = false, cheerPending = false, cheerRequest = 0;
+  let cheerRetryOnGesture = false;
+  const audioMix = {music: .18, effects: 1.8};
+  music.volume = audioMix.music;
+  function syncMusic() {
+    music.volume = cheerSpeaking ? .09 : audioMix.music;
+    music.muted = !soundEnabled;
+    if (!soundEnabled || game.status !== 'playing' || document.hidden) {
+      music.pause();
+      return;
+    }
+    if (music.paused) music.play()?.then(() => {
+      if (!soundEnabled || game.status !== 'playing' || document.hidden) music.pause();
+    }).catch(() => {});
+  }
+  function stopCheerVoice() {
+    if (cheerVoice.paused && !cheerPending && !cheerSpeaking) return;
+    cheerRequest++;
+    cheerPending = false;
+    cheerVoice.pause();
+    cheerSpeaking = false;
+    syncMusic();
+  }
+  function syncCheer() {
+    const active = game.status === 'playing' && !document.hidden &&
+      game.time >= cheerTiming.start && game.time < cheerTiming.end;
+    cheerVoice.muted = !soundEnabled;
+    if (!active || !soundEnabled) {
+      stopCheerVoice();
+      return;
+    }
+    if (cheerSpoken || cheerPending || !cheerVoice.paused || cheerRetryOnGesture) return;
+    const request = ++cheerRequest;
+    cheerPending = true;
+    const failed = error => {
+      if (request !== cheerRequest) return;
+      cheerPending = false;
+      cheerSpeaking = false;
+      cheerRetryOnGesture = error?.name === 'NotAllowedError';
+      if (!cheerRetryOnGesture) cheerSpoken = true;
+      syncMusic();
+    };
+    try {
+      Promise.resolve(cheerVoice.play()).then(() => {
+        if (request !== cheerRequest) return;
+        cheerPending = false;
+        if (game.status !== 'playing' || !soundEnabled || document.hidden || game.time >= cheerTiming.end) {
+          stopCheerVoice();
+          return;
+        }
+        cheerSpeaking = true;
+        syncMusic();
+      }).catch(failed);
+    } catch (error) {
+      failed(error);
+    }
+  }
+  for (const type of ['ended', 'error']) cheerVoice.addEventListener(type, () => {
+    cheerSpoken = true;
+    stopCheerVoice();
+  });
   let helpSeen = false;
   let helpAction = 'dismiss';
   let helpReturnStatus = 'ready';
@@ -95,6 +160,8 @@
     }
   }
   function syncScreens() {
+    syncCheer();
+    syncMusic();
     $('startScreen').hidden = game.status !== 'ready';
     $('pauseScreen').hidden = game.status !== 'paused';
     $('resultScreen').hidden = game.status !== 'ended';
@@ -115,6 +182,12 @@
   }
   function unlockAudio() {
     if (!soundEnabled) return;
+    if (cheerRetryOnGesture) {
+      cheerRetryOnGesture = false;
+      cheerSpoken = false;
+      syncCheer();
+    }
+    syncMusic();
     try {
       const Context = window.AudioContext || window.webkitAudioContext;
       if (!audio && Context) audio = new Context();
@@ -132,7 +205,7 @@
     osc.frequency.setValueAtTime(frequency, start);
     osc.frequency.exponentialRampToValueAtTime(end, start + duration);
     volume.gain.setValueAtTime(0, start);
-    volume.gain.linearRampToValueAtTime(gain, start + .003);
+    volume.gain.linearRampToValueAtTime(gain * audioMix.effects, start + .003);
     volume.gain.exponentialRampToValueAtTime(.0001, start + duration);
     osc.connect(volume);
     volume.connect(audio.destination);
@@ -150,13 +223,17 @@
       tone(920, 230, .035, .025, 0, 'square');
     }
     if (type === 'recovery') {
-      tone(523.25, 523.25, .11, .035, .04);
-      tone(659.25, 659.25, .12, .032, .12);
-      tone(783.99, 783.99, .20, .03, .20);
+      // Quick upward scoops give the transformation a bubbly recovery chime.
+      tone(420, 659.25, .10, .055, .035, 'sine');
+      tone(620, 880, .10, .052, .105, 'sine');
+      tone(830, 1174.66, .12, .050, .175, 'sine');
+      tone(1120, 1567.98, .18, .045, .255, 'sine');
     }
     if (type === 'damage') tone(150, 65, .15, .055);
   }
   function setSound() {
+    syncCheer();
+    syncMusic();
     $('soundBtn').setAttribute('aria-pressed', String(soundEnabled));
     $('soundBtn').setAttribute('aria-label', soundEnabled ? '소리 끄기' : '소리 켜기');
     $('soundBtn').title = soundEnabled ? '소리 끄기' : '소리 켜기';
@@ -191,8 +268,13 @@
       return;
     }
     cancelAim();
+    stopCheerVoice();
+    cheerSpoken = false;
+    cheerRetryOnGesture = false;
+    cheerVoice.currentTime = 0;
     unlockAudio();
     renderer.effects = [];
+    music.currentTime = 0;
     game.start();
     lastFrame = performance.now();
     syncScreens();
@@ -351,7 +433,7 @@
         resolve();
       };
       image.onerror = () => reject(new Error(name));
-      image.src = `${name}.png`;
+      image.src = `assets/${name}.png`;
     }))]).then(() => {
       assetsReady = true;
       $('startLabel').textContent = 'START';
@@ -374,6 +456,7 @@
       game.advance(dt);
       processEvents();
       updateHud();
+      syncCheer();
     }
     renderer.draw(game, aim);
     requestAnimationFrame(frame);

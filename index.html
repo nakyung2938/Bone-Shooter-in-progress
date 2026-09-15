@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#09070c">
   <meta name="description" content="본죽 BON-SHOOTER. 따뜻한 한 발로 일상을 되찾는 브랜드 아케이드.">
   <title>BON-SHOOTER | 본죽</title>
-  <link rel="preload" href="Mulmaru.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="style.css?v=20260913-arcade-polish">
+  <link rel="preload" href="assets/fonts/Mulmaru.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css?v=20260915-recorded-voice">
 </head>
 <body>
   <div class="app-shell">
     <header class="brand-header">
-      <div class="brand-lockup"><img class="brand-bowl" src="bonjuk_bowl.png" alt="" width="40" height="33"><span class="brand-name">본죽</span></div>
+      <div class="brand-lockup"><img class="brand-bowl" src="assets/bonjuk_bowl.png" alt="" width="40" height="33"><span class="brand-name">본죽</span></div>
       <span class="game-wordmark">BON-SHOOTER</span>
       <div class="header-actions">
         <button class="icon-button" id="helpBtn" aria-label="게임 방법" title="게임 방법" aria-haspopup="dialog" aria-controls="helpDialog" type="button">
@@ -29,7 +29,7 @@
     <main class="game-arena" id="gameArena" aria-label="본죽 죽과 비빔밥 슈팅 게임">
       <canvas id="gameCanvas" width="720" height="1280" tabindex="0" aria-label="좀비 쪽 화면을 누르고 있으면 죽과 비빔밥이 랜덤으로 연속 발사. 손을 떼면 멈춤">이 게임은 Canvas를 지원하는 브라우저가 필요합니다.</canvas>
       <section class="hud" id="hud" aria-label="게임 현황">
-        <div class="readout hp-readout"><span class="readout-label">HP</span><div class="hearts" id="hearts" role="img" aria-label="체력 3 / 3"><img src="heart_violet.png" alt="" width="33" height="27"><img src="heart_violet.png" alt="" width="33" height="27"><img src="heart_violet.png" alt="" width="33" height="27"></div></div>
+        <div class="readout hp-readout"><span class="readout-label">HP</span><div class="hearts" id="hearts" role="img" aria-label="체력 3 / 3"><img src="assets/heart_violet.png" alt="" width="33" height="27"><img src="assets/heart_violet.png" alt="" width="33" height="27"><img src="assets/heart_violet.png" alt="" width="33" height="27"></div></div>
         <div class="readout time-readout"><span class="readout-label">TIME</span><b id="timeText">00:30</b></div>
         <div class="readout score-readout"><span class="readout-label">SCORE</span><b id="scoreText">000000</b></div>
       </section>
@@ -39,9 +39,9 @@
           <h1 id="startTitle">BON<span class="title-dash">-</span><br>SHOOTER</h1>
           <p class="tagline">따뜻한 한 발, 든든한 회복.</p>
           <div class="start-art" aria-hidden="true">
-            <img class="welcome-zombie" src="zombie_gray_front.png" alt="">
-            <div class="welcome-meals"><img src="meal_porridge.png" alt=""><img src="meal_bibimbap.png" alt=""></div>
-            <img class="welcome-human" src="human_white.png" alt="">
+            <img class="welcome-zombie" src="assets/zombie_gray_front.png" alt="">
+            <div class="welcome-meals"><img src="assets/meal_porridge.png" alt=""><img src="assets/meal_bibimbap.png" alt=""></div>
+            <img class="welcome-human" src="assets/human_white.png" alt="">
           </div>
           <button class="primary-button" id="startBtn" type="button" disabled><span id="startLabel">준비 중</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
           <p class="load-status" id="loadStatus" role="status"></p>
@@ -55,7 +55,7 @@
       <section class="overlay result-screen" id="resultScreen" aria-labelledby="resultTitle" hidden>
         <p class="eyebrow" id="resultMessage">따뜻한 한 그릇, 수고했어요!</p>
         <h2 id="resultTitle">TIME UP!</h2>
-        <img class="result-human" src="human_gray.png" alt="회복된 캐릭터">
+        <img class="result-human" src="assets/human_gray.png" alt="회복된 캐릭터">
         <div class="result-score"><span>SCORE</span><strong id="resultScore">0</strong></div>
         <div class="reward" id="reward"><span class="reward-label">REWARD</span><strong id="couponReward">다음 한 발을 응원해요</strong><small id="rewardNote"></small></div>
         <button class="primary-button" id="restartBtn" type="button">RESTART<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
@@ -72,11 +72,11 @@
     <div class="help-body">
       <p class="help-goal" id="helpGoal">30초 안에 최고 점수에 도전해요.</p>
       <div class="help-art" aria-hidden="true">
-        <div class="help-meals"><img src="meal_porridge.png" alt=""><img src="meal_bibimbap.png" alt=""></div>
+        <div class="help-meals"><img src="assets/meal_porridge.png" alt=""><img src="assets/meal_bibimbap.png" alt=""></div>
         <svg class="help-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
-        <img class="help-character" src="zombie_gray_front.png" alt="">
+        <img class="help-character" src="assets/zombie_gray_front.png" alt="">
         <svg class="help-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
-        <img class="help-character" src="human_gray.png" alt="">
+        <img class="help-character" src="assets/human_gray.png" alt="">
       </div>
       <ol class="help-steps">
         <li><span class="step-number" aria-hidden="true">01</span><div><strong>좀비 쪽을 꾹 누르기</strong><p>좀비가 있는 곳을 터치하거나 클릭해요.</p></div></li>
@@ -91,10 +91,12 @@
     </div>
     <footer class="help-footer"><button class="primary-button" id="helpConfirmBtn" type="button"><span id="helpConfirmLabel">확인</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button></footer>
   </dialog>
-  <script src="sat.js"></script>
-  <script src="hit-shapes.js"></script>
+  <script src="vendor/sat.js"></script>
+  <audio id="backgroundMusic" src="assets/noctonic-quest.mp3" preload="metadata" loop hidden></audio>
+  <audio id="characterVoice" src="assets/character-cheer.m4a" preload="auto" hidden></audio>
+  <script src="assets/hit-shapes.js?v=20260915-original"></script>
   <script src="game-core.js?v=20260913-arcade-polish"></script>
   <script src="game-renderer.js?v=20260913-arcade-polish"></script>
-  <script src="game.js?v=20260913-arcade-polish"></script>
+  <script src="game.js?v=20260915-recorded-voice"></script>
 </body>
 </html>
