@@ -433,7 +433,7 @@
         resolve();
       };
       image.onerror = () => reject(new Error(name));
-      image.src = `assets/${name}.png`;
+      image.src = `${name}.png`;
     }))]).then(() => {
       assetsReady = true;
       $('startLabel').textContent = 'START';

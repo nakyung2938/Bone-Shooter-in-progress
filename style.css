@@ -1,5 +1,5 @@
 @font-face {
-  font-family: "Mulmaru"; src: url("assets/fonts/Mulmaru.woff2") format("woff2");
+  font-family: "Mulmaru"; src: url("Mulmaru.woff2") format("woff2");
   font-style: normal; font-weight: 400 900; font-display: swap;
 }
 :root {
