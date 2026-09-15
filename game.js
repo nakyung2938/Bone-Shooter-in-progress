@@ -419,7 +419,7 @@
     $('startBtn').disabled = true;
     $('startLabel').textContent = '준비 중';
     $('loadStatus').textContent = '';
-    const fontReady = document.fonts ? document.fonts.load('24px Mulmaru', '본죽 게임 방법 SCORE 0123456789').then(faces => {
+    const fontReady = document.fonts?.load ? document.fonts.load('24px Mulmaru', '본죽 게임 방법 SCORE 0123456789').then(faces => {
       if (!faces.length) throw new Error('font');
     }) : Promise.resolve();
     loadPromise = Promise.all([fontReady, ...paths.map(name => new Promise((resolve, reject) => {
