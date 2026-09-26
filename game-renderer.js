@@ -29,7 +29,7 @@
       this.layout = layout;
     }
     add(event) {
-      if (!['hit', 'recovery', 'fire', 'damage'].includes(event.type)) return;
+      if (!['hit', 'recovery', 'fire', 'damage', 'upgrade'].includes(event.type)) return;
       if (event.enemyId !== undefined) for (const previous of this.effects) if (previous.enemyId === event.enemyId) previous.suppressPopup = true;
       const count = this.reducedMotion ? 4 : event.type === 'recovery' ? 18 : event.type === 'fire' ? 5 : 10;
       const particles = Array.from({
@@ -109,7 +109,7 @@
       c.fillStyle = '#100b19a3';
       c.fillRect(0, l.dangerY, l.width, l.height - l.dangerY);
       c.save();
-      c.strokeStyle = game.time - game.damageAt < .16 ? C.violet : '#b487de70';
+      c.strokeStyle = game.bonusActive ? C.yellow : game.time - game.damageAt < .16 ? C.violet : '#b487de70';
       c.lineWidth = 2 * l.unit;
       c.setLineDash([7 * l.unit, 8 * l.unit]);
       c.beginPath();
@@ -137,6 +137,125 @@
       for (const s of game.shots) this.shot(s);
       this.player(game, aim);
       this.drawEffects(game);
+      c.restore();
+      this.drawBonus(game);
+      this.drawLevelUp(game);
+    }
+    meal(pose, level = 1, alpha = 1, fall = 0) {
+      this.sprite(pose.sprite, pose.x, pose.y, pose.w, pose.h, {angle: pose.angle || 0, alpha});
+      if (level < 2) return;
+      const c = this.ctx;
+      c.save();
+      c.globalAlpha = alpha;
+      c.translate(pose.x, pose.y);
+      c.rotate(pose.angle || 0);
+      // Pixel abalone slices sit inside the original bowl silhouette, not outside its hitbox.
+      const slices = level === 3 ? [[-.18,-.24], [0,-.29], [.18,-.24], [-.09,-.06], [.11,-.06]] : [[-.12,-.20], [.12,-.18]];
+      for (let i = 0; i < slices.length; i++) {
+        const [x,y] = slices[i];
+        c.save();
+        c.translate(x * pose.w, y * pose.h - fall * (1 + i * .15));
+        c.rotate((i % 2 ? 1 : -1) * .24);
+        c.scale(pose.w / 100, pose.w / 100);
+        const outline = [[-12,-2],[-10,-2],[-10,-4],[-7,-4],[-7,-6],[-3,-6],[-3,-7],
+          [3,-7],[3,-6],[7,-6],[7,-4],[10,-4],[10,-2],[12,-2],[12,2],
+          [10,2],[10,4],[7,4],[7,6],[3,6],[3,7],[-3,7],[-3,6],[-7,6],[-7,4],[-10,4],[-10,2],[-12,2]];
+        for (const [scale,color] of [[1,'#41402a'], [.87,'#a7814b'], [.70,'#f7d99a']]) {
+          c.fillStyle = color;
+          c.beginPath();
+          outline.forEach(([px,py],i) => i ? c.lineTo(px*scale,py*scale) : c.moveTo(px*scale,py*scale));
+          c.closePath();c.fill();
+        }
+        c.fillStyle = '#fff1c9';
+        c.fillRect(-4,-4,7,2);c.fillRect(-6,-2,3,2);
+        c.fillStyle = '#be975f';
+        for (const offset of [-4,0,4]) {
+          c.fillRect(offset,-2,1,2);c.fillRect(offset+1,0,1,2);c.fillRect(offset+2,2,1,1);
+        }
+        c.restore();
+      }
+      c.restore();
+    }
+    levelUpLayout(game) {
+      if (!game.levelUp) return null;
+      const l = game.layout;
+      const scale = Math.min(l.unit, (l.width - 32) / 600, (l.dangerY - l.fieldTop - 24) / 480);
+      return {x:l.width / 2, y:(l.fieldTop + l.dangerY) / 2, scale,
+        width:600 * scale, height:480 * scale};
+    }
+    drawLevelUp(game) {
+      const box = this.levelUpLayout(game);
+      if (!box) return;
+      const c = this.ctx, l = game.layout, t = game.levelUp;
+      const enter = this.reducedMotion ? 1 : clamp(t.age / .18, 0, 1);
+      const exit = clamp((t.duration - t.age) / .16, 0, 1);
+      const settled = this.reducedMotion ? 1 : clamp((t.age - .20) / .32, 0, 1);
+      c.save();
+      c.fillStyle = '#08050ee0';
+      c.fillRect(0, l.fieldTop - 14, l.width, l.height - l.fieldTop + 14);
+      c.globalAlpha = exit;
+      c.translate(box.x, box.y + (1 - enter) * 12 * box.scale);
+      c.scale(box.scale, box.scale);
+      c.textAlign = 'center';
+      c.fillStyle = C.violet;
+      c.font = '24px Mulmaru, sans-serif';
+      c.fillText(t.kind === 'rush' ? 'BONUS TIME · LV. 02' : 'TOPPING UPGRADE · LV. 03', 0, -190);
+      c.font = '64px Mulmaru, sans-serif';
+      c.fillStyle = '#6a3c96';
+      c.fillText(t.kind === 'rush' ? 'LEVEL UP!' : 'POWER UP!', 3, -122);
+      c.fillStyle = C.yellow;
+      c.fillText(t.kind === 'rush' ? 'LEVEL UP!' : 'POWER UP!', 0, -128);
+      for (let i = 0; i < 8; i++) {
+        const angle = i * Math.PI / 4, radius = 125 + (this.reducedMotion ? 0 : settled * 30);
+        const x = Math.cos(angle) * radius, y = -5 + Math.sin(angle) * radius * .5;
+        c.fillStyle = i % 2 ? C.violet : C.yellow;
+        c.fillRect(x - 2, y - 8, 4, 16); c.fillRect(x - 8, y - 2, 16, 4);
+      }
+      const size = 230 + 16 * settled;
+      this.meal({sprite:t.sprite, x:0, y:3, w:size, h:size * 210 / 260}, t.level, 1, (1 - settled) * 28);
+      c.font = '34px Mulmaru, sans-serif';
+      c.fillStyle = C.white;
+      c.fillText(t.kind === 'rush' ? '전복 토핑 추가!' : '전복 토핑 더블!', 0, 137);
+      c.font = '23px Mulmaru, sans-serif';
+      c.fillStyle = C.yellow;
+      c.fillText(t.kind === 'rush' ? '회복 점수 ×2  ·  연사 UP' : '크기 UP  ·  연사 한 번 더 UP', 0, 175);
+      c.fillStyle = '#493252';
+      c.fillRect(-110, 203, 220, 5);
+      c.fillStyle = C.violet;
+      c.fillRect(-110, 203, 220 * clamp(t.age / t.duration, 0, 1), 5);
+      c.restore();
+    }
+    drawBonus(game) {
+      const c = this.ctx, l = game.layout, u = l.unit;
+      c.save();
+      if (game.menuItem) {
+        const p = game.menuItem;
+        c.fillStyle = '#201329e6';
+        c.fillRect(p.x - p.w / 2 - 8 * u, p.y - p.h / 2 - 8 * u, p.w + 16 * u, p.h + 16 * u);
+        c.strokeStyle = C.yellow;
+        c.lineWidth = 4 * u;
+        c.strokeRect(p.x - p.w / 2 - 8 * u, p.y - p.h / 2 - 8 * u, p.w + 16 * u, p.h + 16 * u);
+        this.meal(p, 3);
+        c.fillStyle = C.yellow;
+        c.textAlign = 'center';
+        c.font = `${20 * u}px Mulmaru, sans-serif`;
+        c.fillText('전복 더블!', p.x, p.y - p.h / 2 - 18 * u);
+        c.fillRect(p.x - p.w / 2, p.y + p.h / 2 + 16 * u,
+          p.w * clamp((p.expires - game.time) / CONFIG.menuLifetime, 0, 1), 4 * u);
+      }
+      const notice = game.notice && game.time < game.notice.until;
+      if (notice || game.bonusActive) {
+        const text = notice ? game.notice.text : `RUSH ×2 · ${Math.ceil(CONFIG.bonusEnd - game.time)}s${game.time < game.boostUntil ? ` · UP ${Math.ceil(game.boostUntil - game.time)}s` : ''}`;
+        c.font = `${26 * u}px Mulmaru, sans-serif`;
+        c.textAlign = 'center';
+        const width = Math.min(l.width - 24 * u, c.measureText(text).width + 32 * u);
+        c.fillStyle = '#160e24ed';
+        c.fillRect((l.width - width) / 2, l.statusY, width, 44 * u);
+        c.fillStyle = C.yellow;
+        c.fillText(text, l.width / 2, l.statusY + 30 * u, width - 16 * u);
+        if (game.bonusActive) c.fillRect((l.width - width) / 2, l.statusY + 43 * u,
+          width * clamp((CONFIG.bonusEnd - game.time) / (CONFIG.bonusEnd - CONFIG.bonusStart), 0, 1), 2 * u);
+      }
       c.restore();
     }
     enemy(e, game) {
@@ -192,15 +311,19 @@
       c.globalAlpha = alpha;
       c.translate(s.x, s.y);
       c.rotate(s.angle);
-      c.fillStyle = '#efbc4840';
+      c.fillStyle = s.level > 1 ? '#efbc48b0' : '#efbc4840';
       c.fillRect(-s.size * .86, -s.size * .13, s.size * .48, s.size * .065);
-      c.fillStyle = '#fffef730';
+      c.fillStyle = s.level > 1 ? '#fff2b880' : '#fffef730';
       c.fillRect(-s.size * 1.03, s.size * .075, s.size * .58, s.size * .045);
+      if (s.level === 3) {
+        c.fillStyle = C.yellow;
+        for (const [x,y] of [[-.8,-.25], [-1.15,.22]]) {
+          c.fillRect(s.size * x - 2, s.size * y - 6, 4, 12);
+          c.fillRect(s.size * x - 6, s.size * y - 2, 12, 4);
+        }
+      }
       c.restore();
-      this.sprite(pose.sprite, pose.x, pose.y, pose.w, pose.h, {
-        angle: pose.angle,
-        alpha
-      });
+      this.meal(pose, s.level, alpha);
     }
     swipeHintLayout(game, aim = {active: false}) {
       if (game.status !== 'playing' || game.fired > 0 || aim.active || game.time >= 8) return null;
@@ -320,14 +443,33 @@
         elapsed = game.time - game.firedAt;
       const kick = this.reducedMotion ? 0 : Math.sin(clamp(elapsed / CONFIG.fireInterval, 0, 1) * Math.PI);
       const origin = muzzle(l);
-      const loaded = projectilePose({ ...origin, size: 104 * l.unit, sprite: game.nextMeal,
+      const level = game.mealLevel();
+      const loaded = projectilePose({ ...origin, size: game.mealSize(), sprite: game.nextMeal,
         angle: Math.atan2(game.aimDirection.y, game.aimDirection.x) });
-      this.sprite(loaded.sprite, origin.x, origin.y, loaded.w, loaded.h, {angle: loaded.angle});
+      this.meal(loaded, level);
       const art = this.assets.serving_tray;
       if (!art) return;
       const width = 300 * l.unit, height = width * art.height / art.width * (1 - kick * .018);
       // Anchor the tray's base during recoil and keep waiting food behind the entire launcher.
       this.sprite('serving_tray', p.x, p.y + p.h * .5 - height / 2, width, height);
+      if (level > 1) {
+        const c = this.ctx, u = l.unit, x = p.x + 182 * u, y = p.y;
+        c.save();
+        c.textAlign = 'center';
+        c.font = `${24 * u}px Mulmaru, sans-serif`;
+        c.fillStyle = C.yellow;
+        c.fillText(`LV.${level}`, x, y);
+        c.font = `${19 * u}px Mulmaru, sans-serif`;
+        c.fillStyle = C.white;
+        c.fillText(level === 3 ? '전복 더블' : '전복 토핑', x, y + 26 * u);
+        const remaining = level === 3 ? (game.boostUntil - game.time) / CONFIG.menuBoostDuration :
+          (CONFIG.bonusEnd - game.time) / (CONFIG.bonusEnd - CONFIG.bonusStart);
+        c.fillStyle = C.violet;
+        c.fillRect(x - 42 * u, y + 39 * u, 84 * u, 4 * u);
+        c.fillStyle = C.yellow;
+        c.fillRect(x - 42 * u, y + 39 * u, 84 * u * clamp(remaining, 0, 1), 4 * u);
+        c.restore();
+      }
     }
     speechLayout(game, aim = {active: false}) {
       const speech = game.speech;
@@ -469,7 +611,7 @@
         c.lineJoin = 'round';
         c.lineWidth = 5 * l.unit;
         c.strokeStyle = C.cream;
-        const text = e.type === 'damage' ? '−1' : `+${e.score}`;
+        const text = e.type === 'upgrade' ? 'UP!' : e.type === 'damage' ? '−1' : `+${e.score}`;
         const x = clamp(e.popupX ?? e.x, 60 * l.unit, l.width - 60 * l.unit);
         const y = Math.max(l.fieldTop + 15, (e.popupY ?? e.y) - age * 40);
         c.strokeText(text, x, y);

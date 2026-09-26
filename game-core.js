@@ -5,6 +5,17 @@
 
   const CONFIG = Object.freeze({
     duration: 30,
+    bonusStart: 12,
+    bonusEnd: 22,
+    bonusFireRate: .65,
+    bonusSpawnRate: .45,
+    bonusExtraEnemies: 2,
+    levelUpDuration: 1.65,
+    toppingUpDuration: 1.35,
+    menuBoostDuration: 4,
+    menuBoostRate: .65,
+    menuLifetime: 4,
+    menuInterval: 5,
     lives: 3,
     hitsToRecover: 2,
     hitScore: 100,
@@ -80,7 +91,8 @@
       player,
       cssWidth,
       cssHeight,
-      fieldTop: hudHeight * width / cssWidth + 20,
+      statusY: hudHeight * width / cssWidth + 12,
+      fieldTop: hudHeight * width / cssWidth + 12 + 54 * unit,
       dangerY: player.y - trayHeight * .60,
       enemyHeight: 170 * unit,
       maxEnemies: mode === 'desktopLandscape' ? 4 : 3
@@ -299,6 +311,14 @@
       this.pendingSpeech = null;
       this.lastSpeech = '';
       this.nextSpeechAt = 1.2;
+      this.bonusActive = false;
+      this.bonusIntroduced = false;
+      this.levelUp = null;
+      this.bonusScore = 0;
+      this.boostUntil = 0;
+      this.menuItem = null;
+      this.nextItemAt = CONFIG.bonusStart + 3;
+      this.notice = null;
     }
     start() {
       Object.assign(this, new Game(this.layout, this.random, this.dialogueRandom));
@@ -329,6 +349,61 @@
     }
     pickMeal() {
       return MEALS[this.random() < .5 ? 0 : 1];
+    }
+    fireInterval() {
+      return CONFIG.fireInterval * (this.bonusActive ? CONFIG.bonusFireRate : 1) *
+        (this.time < this.boostUntil ? CONFIG.menuBoostRate : 1);
+    }
+    mealLevel() {
+      return this.time < this.boostUntil ? 3 : this.bonusActive ? 2 : 1;
+    }
+    mealSize(level = this.mealLevel()) {
+      return CONFIG.shotSize * this.layout.unit * (level === 3 ? 1.26 : level === 2 ? 1.1 : 1);
+    }
+    beginLevelUp(kind) {
+      if (this.levelUp || this.status !== 'playing') return;
+      this.levelUp = {kind, age: 0, duration: kind === 'rush' ? CONFIG.levelUpDuration : CONFIG.toppingUpDuration,
+        sprite: this.nextMeal, level: kind === 'rush' ? 2 : 3};
+      this.emit('levelUp', {kind});
+    }
+    advanceLevelUp(dt) {
+      this.levelUp.age += dt;
+      if (this.levelUp.age + 1e-7 < this.levelUp.duration) return;
+      const kind = this.levelUp.kind;
+      this.levelUp = null;
+      if (kind === 'rush') {
+        this.bonusIntroduced = true;
+        this.updateBonus();
+      } else {
+        this.boostUntil = Math.min(CONFIG.bonusEnd, this.time + CONFIG.menuBoostDuration);
+        this.notice = {text: '전복 더블! 크기 UP · 연사 UP', until: this.time + 1.4};
+        this.emit('upgrade', {...muzzle(this.layout)});
+      }
+      // No queued shots or lost power-up time during the presentation pause.
+      this.nextFireAt = this.time;
+    }
+    updateBonus() {
+      if (this.boostUntil && this.time + 1e-7 >= this.boostUntil) this.boostUntil = 0;
+      const active = this.time + 1e-7 >= CONFIG.bonusStart && this.time + 1e-7 < CONFIG.bonusEnd;
+      if (active && !this.bonusIntroduced) {
+        this.beginLevelUp('rush');
+        return;
+      }
+      if (active !== this.bonusActive) {
+        this.bonusActive = active;
+        this.notice = {text: active ? '전복 토핑 ON! 회복 점수 ×2' : `회복 러시 완료! +${this.bonusScore}`, until: this.time + 1.8};
+        this.spawnIn = Math.min(this.spawnIn, active ? .2 : 1.25);
+        this.emit(active ? 'bonusStart' : 'bonusEnd');
+        if (!active) { this.menuItem = null; this.boostUntil = 0; }
+      }
+      if (this.menuItem && this.time + 1e-7 >= this.menuItem.expires) this.menuItem = null;
+      if (active && !this.menuItem && this.time + 1e-7 >= this.nextItemAt) {
+        const l = this.layout;
+        this.menuItem = {x: l.width * .5, y: l.fieldTop + (l.dangerY - l.fieldTop) * .35,
+          w: 105 * l.unit, h: 85 * l.unit, sprite: this.pickMeal(),
+          expires: Math.min(CONFIG.bonusEnd, this.time + CONFIG.menuLifetime)};
+        this.nextItemAt = this.time + CONFIG.menuInterval;
+      }
     }
     showSpeech(speaker, kind = 'idle') {
       const pool = kind === 'hit' ? DIALOGUE.hitLines : kind === 'recovery' ? DIALOGUE.recoveryLines : DIALOGUE.lines;
@@ -375,7 +450,7 @@
       this.showSpeech(speaker);
     }
     fire(target) {
-      if (this.status !== 'playing') return null;
+      if (this.status !== 'playing' || this.levelUp) return null;
       const solution = solveShot(this.layout, target);
       if (!solution) return null;
       this.aimDirection = {x: Math.cos(solution.angle), y: Math.sin(solution.angle)};
@@ -384,7 +459,8 @@
         id: this.nextId++,
         age: 0,
         travelled: 0,
-        size: CONFIG.shotSize * this.layout.unit,
+        level: this.mealLevel(),
+        size: this.mealSize(),
         sprite: this.nextMeal
       };
       shot.maxDistance = projectileRange(this.layout, shot.angle, shot.size);
@@ -408,9 +484,9 @@
       const justPressed = this.firingTarget === null;
       this.aimDirection = {x: Math.cos(solution.angle), y: Math.sin(solution.angle)};
       this.firingTarget = { ...target };
-      if (justPressed) {
+      if (justPressed && !this.levelUp) {
         this.fire(this.firingTarget);
-        this.nextFireAt = this.time + CONFIG.fireInterval;
+        this.nextFireAt = this.time + this.fireInterval();
       }
     }
     stopFiring() {
@@ -418,12 +494,12 @@
     }
     spawn() {
       const l = this.layout;
-      if (this.enemies.filter(e => e.hits < CONFIG.hitsToRecover).length >= l.maxEnemies) return;
+      if (this.enemies.filter(e => e.hits < CONFIG.hitsToRecover).length >= l.maxEnemies + (this.bonusActive ? CONFIG.bonusExtraEnemies : 0)) return;
       const h = l.enemyHeight,
         w = h * 260 / 420;
       const lanes = l.mode === 'desktopLandscape' ? [.12, .31, .50, .69, .88] : [.19, .5, .81];
       const occupied = this.enemies.filter(e => e.hits < CONFIG.hitsToRecover);
-      const available = lanes.filter(lane => !occupied.some(e => Math.abs(e.lane - lane) < .13));
+      const available = lanes.filter(lane => !occupied.some(e => Math.abs(e.lane - lane) < .13 && (!this.bonusActive || e.y < l.fieldTop + h * 2)));
       const candidates = available.length ? available : lanes.filter(lane => !occupied.some(e => Math.abs(e.lane - lane) < .13 && e.y < l.fieldTop + h * 2));
       if (!candidates.length) return;
       const lane = candidates[Math.floor(this.random() * candidates.length)],
@@ -457,6 +533,11 @@
       this.speech = null;
       this.pendingSpeech = null;
       this.accumulator = 0;
+      this.bonusActive = false;
+      this.levelUp = null;
+      this.menuItem = null;
+      this.boostUntil = 0;
+      this.notice = null;
       this.emit('end', {
         reason
       });
@@ -470,6 +551,11 @@
       }
     }
     step(dt) {
+      // Presentation time is separate from simulation time, including every gameplay timer.
+      if (this.levelUp) {
+        this.advanceLevelUp(dt);
+        return;
+      }
       const previousTime = this.time;
       this.time += dt;
       this.timeLeft = Math.max(0, CONFIG.duration - this.time);
@@ -478,15 +564,17 @@
         this.finish('time');
         return;
       }
+      this.updateBonus();
+      if (this.levelUp) return;
       if (this.firingTarget && this.time + 1e-7 >= this.nextFireAt) {
         this.fire(this.firingTarget);
-        this.nextFireAt += CONFIG.fireInterval;
+        this.nextFireAt += this.fireInterval();
       }
       const l = this.layout;
       this.spawnIn -= dt;
       if (this.spawnIn <= 0) {
         this.spawn();
-        this.spawnIn = 1.25 + this.random() * .3;
+        this.spawnIn = (1.25 + this.random() * .3) * (this.bonusActive ? CONFIG.bonusSpawnRate : 1);
       }
       const poses = new Map();
       for (const e of this.enemies) {
@@ -525,7 +613,13 @@
             enemy: e
           };
         }
-        if (first) {
+        const itemHit = this.menuItem && sweepHit(shot, end, this.menuItem, this.menuItem);
+        if (itemHit && (!first || itemHit.t < first.t)) {
+          shot.dead = true;
+          this.menuItem = null;
+          this.beginLevelUp('topping');
+          break;
+        } else if (first) {
           shot.travelled += travel * first.t;
           shot.x = first.x;
           shot.y = first.y;
@@ -542,6 +636,7 @@
         }
       }
       this.shots = this.shots.filter(s => !s.dead);
+      if (this.levelUp) return;
       for (const e of this.enemies) {
         if (e.hits >= CONFIG.hitsToRecover) continue;
         const pose = enemyPose(e, this.time);
@@ -572,14 +667,16 @@
       this.combo = this.time - this.lastHit <= CONFIG.comboWindow ? this.combo + 1 : 1;
       this.lastHit = this.time;
       this.hitCount++;
-      this.score += CONFIG.hitScore;
+      const multiplier = this.bonusActive ? 2 : 1;
+      this.score += CONFIG.hitScore * multiplier;
       const recovered = e.hits >= CONFIG.hitsToRecover;
       if (recovered) {
         e.recoveredAt = this.time;
-        this.score += CONFIG.recoveryScore;
+        this.score += CONFIG.recoveryScore * multiplier;
         this.recovered++;
       }
       this.queueReaction(e, recovered ? 'recovery' : 'hit');
+      if (this.bonusActive) this.bonusScore += CONFIG.hitScore + (recovered ? CONFIG.recoveryScore : 0);
       this.emit(recovered ? 'recovery' : 'hit', {
         ...contact,
         enemyId: e.id,
@@ -587,13 +684,20 @@
         popupX: e.x,
         popupY: e.y - e.h * .5 - (recovered ? 58 : 40) * this.layout.unit,
         combo: this.combo,
-        score: CONFIG.hitScore + (recovered ? CONFIG.recoveryScore : 0)
+        score: (CONFIG.hitScore + (recovered ? CONFIG.recoveryScore : 0)) * multiplier
       });
     }
     resize(next) {
       const old = this.layout,
         sx = next.width / old.width,
         sy = next.height / old.height;
+      if (this.menuItem) {
+        const progress = (this.menuItem.y - old.fieldTop) / (old.dangerY - old.fieldTop);
+        this.menuItem.x *= sx;
+        this.menuItem.y = next.fieldTop + progress * (next.dangerY - next.fieldTop);
+        this.menuItem.w *= next.unit / old.unit;
+        this.menuItem.h *= next.unit / old.unit;
+      }
       if (this.firingTarget) {
         this.firingTarget.x *= sx;
         this.firingTarget.y *= sy;

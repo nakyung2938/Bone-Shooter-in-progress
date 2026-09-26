@@ -37,23 +37,48 @@
     lastSecond = -1;
   const helpDialog = $('helpDialog');
   const music = $('backgroundMusic');
+  const bonusMusic = $('bonusMusic');
   const cheerVoice = $('characterVoice');
   cheerVoice.volume = .6;
   const cheerTiming = {start: 5, end: 11};
   let cheerSpoken = false, cheerSpeaking = false, cheerPending = false, cheerRequest = 0;
   let cheerRetryOnGesture = false;
-  const audioMix = {music: .18, effects: 1.8};
+  const audioMix = {music: .18, effects: 1.8, bonusMusic: .18};
   music.volume = audioMix.music;
+  const effectVoices = new Set();
+  function stopEffects() {
+    for (const osc of effectVoices) osc.stop();
+    effectVoices.clear();
+  }
   function syncMusic() {
+    if (!soundEnabled || game.status !== 'playing' || document.hidden) stopEffects();
     music.volume = cheerSpeaking ? .09 : audioMix.music;
+    bonusMusic.volume = cheerSpeaking ? .09 : audioMix.bonusMusic;
     music.muted = !soundEnabled;
-    if (!soundEnabled || game.status !== 'playing' || document.hidden) {
-      music.pause();
+    bonusMusic.muted = !soundEnabled;
+    const canPlay = soundEnabled && game.status === 'playing' && !document.hidden && !game.levelUp;
+    if (!canPlay || game.bonusActive) music.pause();
+    if (!canPlay || !game.bonusActive) bonusMusic.pause();
+    if (!canPlay) return;
+    if (game.bonusActive) {
+      if (bonusMusic.paused) bonusMusic.play()?.catch(() => {});
       return;
     }
+    if (bonusMusic.currentTime > 0) bonusMusic.pause();
     if (music.paused) music.play()?.then(() => {
-      if (!soundEnabled || game.status !== 'playing' || document.hidden) music.pause();
+      if (!soundEnabled || game.status !== 'playing' || document.hidden || game.bonusActive || game.levelUp) music.pause();
     }).catch(() => {});
+  }
+  function resetBonusMusic() {
+    bonusMusic.pause();
+    bonusMusic.currentTime = 0;
+  }
+  /*
+   * The bonus track is a user-supplied audio file. Keep the old procedural
+   * melody out of the playback path so the transition has one clear source.
+   */
+  function playBonusMusic() {
+    syncMusic();
   }
   function stopCheerVoice() {
     if (cheerVoice.paused && !cheerPending && !cheerSpeaking) return;
@@ -196,7 +221,7 @@
       audio = null;
     }
   }
-  function tone(frequency, end, duration, gain = .045, delay = 0, type = 'triangle') {
+  function tone(frequency, end, duration, gain = .045, delay = 0, type = 'triangle', musicVoice = false) {
     if (!soundEnabled || !audio || audio.state !== 'running') return;
     const start = audio.currentTime + delay,
       osc = audio.createOscillator(),
@@ -205,18 +230,26 @@
     osc.frequency.setValueAtTime(frequency, start);
     osc.frequency.exponentialRampToValueAtTime(end, start + duration);
     volume.gain.setValueAtTime(0, start);
-    volume.gain.linearRampToValueAtTime(gain * audioMix.effects, start + .003);
+    volume.gain.linearRampToValueAtTime(gain * (musicVoice ? audioMix.bonusMusic : audioMix.effects), start + .003);
     volume.gain.exponentialRampToValueAtTime(.0001, start + duration);
     osc.connect(volume);
     volume.connect(audio.destination);
     osc.start(start);
     osc.stop(start + duration + .01);
+    effectVoices.add(osc);
     osc.onended = () => {
+      effectVoices.delete(osc);
       osc.disconnect();
       volume.disconnect();
     };
   }
   function sound(type) {
+    if (type === 'levelUp' && game.levelUp) {
+      stopEffects();
+      // Rounded pitch scoops, then a light major chord: a short "bbyororok" level-up.
+      [523, 659, 784, 1047, 1319].forEach((note, i) => tone(note * .72, note, .14, .052, i * .085, 'sine'));
+      [784, 1047, 1319].forEach(note => tone(note, note, .30, .018, .48, 'triangle'));
+    }
     if (type === 'fire') tone(440, 130, .07, .04);
     if (type === 'hit' || type === 'recovery') {
       tone(180, 55, .09, .09);
@@ -230,6 +263,9 @@
       tone(1120, 1567.98, .18, .045, .255, 'sine');
     }
     if (type === 'damage') tone(150, 65, .15, .055);
+    if (type === 'bonusEnd') {
+      [1047, 784, 659, 523].forEach((note, i) => tone(note, note, .10, .025, i * .07));
+    }
   }
   function setSound() {
     syncCheer();
@@ -258,6 +294,10 @@
     for (const e of game.drainEvents()) {
       renderer.add(e);
       sound(e.type);
+      if (e.type === 'bonusEnd') resetBonusMusic();
+      if (['levelUp', 'bonusStart', 'bonusEnd', 'upgrade'].includes(e.type)) syncMusic();
+      if (e.type === 'levelUp') $('announcement').textContent = e.kind === 'rush' ? '레벨 업! 전복 토핑 추가. 잠시 후 보너스 타임!' : '업그레이드! 전복 더블 토핑!';
+      if (['bonusStart', 'bonusEnd', 'upgrade'].includes(e.type)) $('announcement').textContent = game.notice?.text || '';
       if (e.type === 'end') showResult();
     }
   }
@@ -275,6 +315,7 @@
     unlockAudio();
     renderer.effects = [];
     music.currentTime = 0;
+    resetBonusMusic();
     game.start();
     lastFrame = performance.now();
     syncScreens();
@@ -457,6 +498,7 @@
       processEvents();
       updateHud();
       syncCheer();
+      playBonusMusic();
     }
     renderer.draw(game, aim);
     requestAnimationFrame(frame);
