@@ -5,9 +5,9 @@
 
   const CONFIG = Object.freeze({
     duration: 30,
-    bonusStart: 12,
-    bonusEnd: 22,
-    bonusFireRate: .65,
+    bonusStart: 10,
+    bonusEnd: 20,
+    bonusFireRate: .5,
     bonusSpawnRate: .45,
     bonusExtraEnemies: 2,
     levelUpDuration: 1.65,
@@ -22,7 +22,7 @@
     recoveryScore: 250,
     recoveryDuration: 1.65,
     shotSpeed: 1200,
-    fireInterval: .16,
+    fireInterval: .32,
     shotSize: 100,
     shotFadeStart: .55,
     comboWindow: 3,
@@ -315,9 +315,14 @@
       this.bonusIntroduced = false;
       this.levelUp = null;
       this.bonusScore = 0;
+      this.spawnCount = 0;
+      this.bossIntroduced = false;
+      this.recoveryChain = 0;
+      this.lastRecoveryAt = -Infinity;
       this.boostUntil = 0;
       this.menuItem = null;
-      this.nextItemAt = CONFIG.bonusStart + 3;
+      this.lastItemSide = 0;
+      this.nextItemAt = CONFIG.bonusStart + 1;
       this.notice = null;
     }
     start() {
@@ -325,7 +330,8 @@
       this.status = 'playing';
       this.nextMeal = this.pickMeal();
       this.spawn();
-      this.spawnIn = 1.35;
+      this.spawn();
+      this.spawnIn = .8;
     }
     pause() {
       if (this.status === 'playing') {
@@ -399,7 +405,13 @@
       if (this.menuItem && this.time + 1e-7 >= this.menuItem.expires) this.menuItem = null;
       if (active && !this.menuItem && this.time + 1e-7 >= this.nextItemAt) {
         const l = this.layout;
-        this.menuItem = {x: l.width * .5, y: l.fieldTop + (l.dangerY - l.fieldTop) * .35,
+        const side = this.lastItemSide ? -this.lastItemSide : this.random() < .5 ? -1 : 1;
+        this.lastItemSide = side;
+        const margin = 80 * l.unit;
+        const x = clamp(l.width * (.5 + side * (.18 + this.random() * .12)), margin, l.width - margin);
+        const y = clamp(l.fieldTop + (l.dangerY - l.fieldTop) * (.3 + this.random() * .2),
+          l.fieldTop + 90 * l.unit, l.dangerY - 90 * l.unit);
+        this.menuItem = {x, y, hidden: false, switchAt: this.time + .65,
           w: 105 * l.unit, h: 85 * l.unit, sprite: this.pickMeal(),
           expires: Math.min(CONFIG.bonusEnd, this.time + CONFIG.menuLifetime)};
         this.nextItemAt = this.time + CONFIG.menuInterval;
@@ -425,13 +437,13 @@
       if (this.status !== 'playing') return;
       if (this.speech) {
         const speaker = this.enemies.find(e => e.id === this.speech.enemyId);
-        if (!speaker || speaker.dead || (speaker.hits >= CONFIG.hitsToRecover && this.speech.kind !== 'recovery') ||
+        if (!speaker || speaker.dead || (speaker.hits >= (speaker.maxHits ?? CONFIG.hitsToRecover) && this.speech.kind !== 'recovery') ||
             this.time - this.speech.startedAt >= (this.speech.duration ?? DIALOGUE.duration)) this.speech = null;
       }
       if (this.pendingSpeech) {
         const pending = this.pendingSpeech;
         const speaker = this.enemies.find(e => e.id === pending.enemyId && !e.dead);
-        if (!speaker || (speaker.hits >= CONFIG.hitsToRecover && pending.kind !== 'recovery')) this.pendingSpeech = null;
+        if (!speaker || (speaker.hits >= (speaker.maxHits ?? CONFIG.hitsToRecover) && pending.kind !== 'recovery')) this.pendingSpeech = null;
         else if (this.time + 1e-7 >= pending.readyAt) {
           this.showSpeech(speaker, pending.kind);
           this.pendingSpeech = null;
@@ -439,7 +451,7 @@
       }
       if (this.speech || this.pendingSpeech || this.time < this.nextSpeechAt) return;
       const l = this.layout;
-      const candidates = this.enemies.filter(e => !e.dead && e.hits < CONFIG.hitsToRecover && this.time - e.hitAt > .7 &&
+      const candidates = this.enemies.filter(e => !e.dead && e.hits < (e.maxHits ?? CONFIG.hitsToRecover) && this.time - e.hitAt > .7 &&
         enemyPose(e, this.time).y - e.h * .5 >= l.fieldTop + DIALOGUE.headroom * l.unit && e.y + e.h < l.dangerY);
       if (!candidates.length) {
         this.nextSpeechAt = this.time + .3;
@@ -492,20 +504,36 @@
     stopFiring() {
       this.firingTarget = null;
     }
-    spawn() {
+    bonusProgress() {
+      return this.bonusActive ? clamp((this.time - CONFIG.bonusStart) / (CONFIG.bonusEnd - CONFIG.bonusStart), 0, 1) : 0;
+    }
+    enemyLimit() {
+      return this.layout.maxEnemies + (this.bonusActive ? 2 + Math.floor(this.bonusProgress() * 3) : 1);
+    }
+    spawnInterval() {
+      return (1.25 + this.random() * .3) * (this.bonusActive ? .5 - .3 * this.bonusProgress() : this.time >= 8 ? .55 : .6);
+    }
+    spawn(kind = null) {
       const l = this.layout;
-      if (this.enemies.filter(e => e.hits < CONFIG.hitsToRecover).length >= l.maxEnemies + (this.bonusActive ? CONFIG.bonusExtraEnemies : 0)) return;
-      const h = l.enemyHeight,
+      const boss = kind === 'boss';
+      if (!boss && this.enemies.filter(e => e.hits < (e.maxHits ?? CONFIG.hitsToRecover)).length >= this.enemyLimit()) return;
+      const sizeScale = boss ? 1.5 : 1;
+      const h = l.enemyHeight * sizeScale,
         w = h * 260 / 420;
       const lanes = l.mode === 'desktopLandscape' ? [.12, .31, .50, .69, .88] : [.19, .5, .81];
-      const occupied = this.enemies.filter(e => e.hits < CONFIG.hitsToRecover);
+      const occupied = this.enemies.filter(e => e.hits < (e.maxHits ?? CONFIG.hitsToRecover));
       const available = lanes.filter(lane => !occupied.some(e => Math.abs(e.lane - lane) < .13 && (!this.bonusActive || e.y < l.fieldTop + h * 2)));
       const candidates = available.length ? available : lanes.filter(lane => !occupied.some(e => Math.abs(e.lane - lane) < .13 && e.y < l.fieldTop + h * 2));
-      if (!candidates.length) return;
-      const lane = candidates[Math.floor(this.random() * candidates.length)],
+      if (!boss && !candidates.length) return;
+      const lane = boss ? .5 : candidates[Math.floor(this.random() * candidates.length)],
         group = GROUPS[Math.floor(this.random() * 3)];
       const phase = this.random() * Math.PI * 2;
+      const runner = !boss && this.time >= 8 && this.spawnCount % 2 === 1;
+      this.spawnCount++;
       this.enemies.push({
+        kind: boss ? 'boss' : runner ? 'runner' : 'normal',
+        sizeScale,
+        maxHits: boss ? 10 : runner ? 1 : CONFIG.hitsToRecover,
         id: this.nextId++,
         x: lane * l.width + Math.sin(phase) * l.width * .032,
         y: l.fieldTop + h * .53,
@@ -521,7 +549,8 @@
         kickX: 0,
         kickY: 0,
         sprite: `zombie_${group}_front`,
-        speed: Math.max(18, (l.dangerY - l.fieldTop - h) / (9.2 - this.random() * 1.5))
+        speed: Math.max(18, (l.dangerY - l.fieldTop - h) / (boss ? 6 : 9.2 - this.random() * 1.5)) *
+          (boss ? 1 : (runner ? 1.65 : 1) * (1.2 + this.bonusProgress() * .25))
       });
     }
     finish(reason) {
@@ -571,18 +600,40 @@
         this.nextFireAt += this.fireInterval();
       }
       const l = this.layout;
+      if (!this.bossIntroduced && this.time >= 25) {
+        this.bossIntroduced = true;
+        this.spawn('boss');
+        this.notice = {text: '과로왕 등장! 회복시키면 +1500', until: this.time + 2};
+      }
       this.spawnIn -= dt;
       if (this.spawnIn <= 0) {
         this.spawn();
-        this.spawnIn = (1.25 + this.random() * .3) * (this.bonusActive ? CONFIG.bonusSpawnRate : 1);
+        this.spawnIn = this.spawnInterval();
+      }
+      if (this.menuItem) {
+        const p = this.menuItem;
+        if (this.time >= p.switchAt) {
+          p.hidden = !p.hidden;
+          if (!p.hidden) {
+            // Reappear across the field; never sweep a hitbox through the jump.
+            const side = p.x < l.width*.5 ? 1 : -1;
+            p.x = clamp(l.width*(.5+side*(.12+this.random()*.2)),80*l.unit,l.width-80*l.unit);
+            p.y = clamp(l.fieldTop+(l.dangerY-l.fieldTop)*(.25+this.random()*.35),
+              l.fieldTop+90*l.unit,l.dangerY-90*l.unit);
+          }
+          p.switchAt = this.time + (p.hidden ? .18 : .65);
+        }
       }
       const poses = new Map();
       for (const e of this.enemies) {
-        if (e.hits >= CONFIG.hitsToRecover) continue;
+        if (e.hits >= (e.maxHits ?? CONFIG.hitsToRecover)) continue;
         const before = enemyPose(e, previousTime);
         e.walk += dt;
-        const sideSpeed = Math.cos(e.walk * 1.6 + e.phase);
-        e.x = clamp(e.lane * l.width + Math.sin(e.walk * 1.6 + e.phase) * l.width * .032, e.w * .65, l.width - e.w * .65);
+        const frequency = e.kind === 'runner' ? 3.1 : 2.3;
+        const sway = Math.sin(e.walk * frequency + e.phase) + .35*Math.sin(e.walk*4.7+e.phase*2);
+        const targetX = clamp(e.lane*l.width + sway*l.width*(e.kind === 'boss' ? .09 : .13), e.w*.65, l.width-e.w*.65);
+        const sideSpeed = clamp((targetX-e.x)/(110*l.unit), -1, 1);
+        e.x += clamp(targetX-e.x, -190*l.unit*dt, 190*l.unit*dt);
         e.y += e.speed * dt;
         e.sprite = `zombie_${e.group}_${Math.abs(sideSpeed) < .35 ? 'front' : sideSpeed > 0 ? 'side_a' : 'side_b'}`;
         poses.set(e.id, [before, enemyPose(e, this.time)]);
@@ -599,7 +650,7 @@
         const end = trajectoryPoint(shot, travel / speed);
         let first = null;
         for (const e of this.enemies) {
-          if (e.hits >= CONFIG.hitsToRecover) continue;
+          if (e.hits >= (e.maxHits ?? CONFIG.hitsToRecover)) continue;
           const [from, to] = poses.get(e.id);
           if (Math.max(shot.x, end.x) + shot.size < Math.min(from.x, to.x) - e.w || Math.min(shot.x, end.x) - shot.size > Math.max(from.x, to.x) + e.w || Math.max(shot.y, end.y) + shot.size < Math.min(from.y, to.y) - e.h || Math.min(shot.y, end.y) - shot.size > Math.max(from.y, to.y) + e.h) continue;
           const fraction = travel / (speed * dt);
@@ -613,7 +664,7 @@
             enemy: e
           };
         }
-        const itemHit = this.menuItem && sweepHit(shot, end, this.menuItem, this.menuItem);
+        const itemHit = this.menuItem && !this.menuItem.hidden && sweepHit(shot, end, this.menuItem, this.menuItem);
         if (itemHit && (!first || itemHit.t < first.t)) {
           shot.dead = true;
           this.menuItem = null;
@@ -638,11 +689,12 @@
       this.shots = this.shots.filter(s => !s.dead);
       if (this.levelUp) return;
       for (const e of this.enemies) {
-        if (e.hits >= CONFIG.hitsToRecover) continue;
+        if (e.hits >= (e.maxHits ?? CONFIG.hitsToRecover)) continue;
         const pose = enemyPose(e, this.time);
         if (pose.y + pose.h * .5 >= l.dangerY) {
           e.dead = true;
           this.lives = Math.max(0, this.lives - 1);
+          this.recoveryChain = 0;
           this.combo = 0;
           this.damageAt = this.time;
           this.emit('damage', {
@@ -655,10 +707,11 @@
           }
         }
       }
-      this.enemies = this.enemies.filter(e => !e.dead && (e.hits < CONFIG.hitsToRecover || this.time - e.recoveredAt < CONFIG.recoveryDuration));
+      this.enemies = this.enemies.filter(e => !e.dead && (e.hits < (e.maxHits ?? CONFIG.hitsToRecover) || this.time - e.recoveredAt < CONFIG.recoveryDuration));
       this.updateSpeech();
     }
     hit(e, shot, contact) {
+      if (e.dead || e.hits >= (e.maxHits ?? CONFIG.hitsToRecover)) return;
       if (this.speech?.enemyId === e.id) this.speech = null;
       e.hits++;
       e.hitAt = this.time;
@@ -669,10 +722,21 @@
       this.hitCount++;
       const multiplier = this.bonusActive ? 2 : 1;
       this.score += CONFIG.hitScore * multiplier;
-      const recovered = e.hits >= CONFIG.hitsToRecover;
+      const recovered = e.hits >= (e.maxHits ?? CONFIG.hitsToRecover);
+      let extra = 0;
       if (recovered) {
+        this.recoveryChain = this.time - this.lastRecoveryAt <= 3 ? this.recoveryChain + 1 : 1;
+        this.lastRecoveryAt = this.time;
+        if (this.recoveryChain % 3 === 0) {
+          extra += 500;
+          this.notice = {text: `${this.recoveryChain}연속 회복! +500`, until: this.time + 1.4};
+        }
+        if (e.kind === 'boss') {
+          extra += 1500;
+          this.notice = {text: '과로왕 회복 완료! +1500', until: this.time + 2};
+        }
         e.recoveredAt = this.time;
-        this.score += CONFIG.recoveryScore * multiplier;
+        this.score += CONFIG.recoveryScore * multiplier + extra;
         this.recovered++;
       }
       this.queueReaction(e, recovered ? 'recovery' : 'hit');
@@ -684,7 +748,7 @@
         popupX: e.x,
         popupY: e.y - e.h * .5 - (recovered ? 58 : 40) * this.layout.unit,
         combo: this.combo,
-        score: (CONFIG.hitScore + (recovered ? CONFIG.recoveryScore : 0)) * multiplier
+        score: (CONFIG.hitScore + (recovered ? CONFIG.recoveryScore : 0)) * multiplier + extra
       });
     }
     resize(next) {
@@ -694,6 +758,11 @@
       if (this.menuItem) {
         const progress = (this.menuItem.y - old.fieldTop) / (old.dangerY - old.fieldTop);
         this.menuItem.x *= sx;
+        if (this.menuItem.targetX !== undefined) {
+          this.menuItem.targetX = clamp(this.menuItem.targetX*sx,80*next.unit,next.width-80*next.unit);
+          const targetProgress = (this.menuItem.targetY-old.fieldTop)/(old.dangerY-old.fieldTop);
+          this.menuItem.targetY = clamp(next.fieldTop+targetProgress*(next.dangerY-next.fieldTop),next.fieldTop+90*next.unit,next.dangerY-90*next.unit);
+        }
         this.menuItem.y = next.fieldTop + progress * (next.dangerY - next.fieldTop);
         this.menuItem.w *= next.unit / old.unit;
         this.menuItem.h *= next.unit / old.unit;
@@ -705,7 +774,7 @@
       for (const e of this.enemies) {
         const oldStart = old.fieldTop + e.h * .53;
         const progress = (e.y - oldStart) / Math.max(1, old.dangerY - e.h * .5 - oldStart);
-        e.h = next.enemyHeight;
+        e.h = next.enemyHeight * (e.sizeScale || 1);
         e.w = e.h * 260 / 420;
         const newStart = next.fieldTop + e.h * .53;
         e.y = newStart + progress * (next.dangerY - e.h * .5 - newStart);

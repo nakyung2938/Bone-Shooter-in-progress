@@ -282,9 +282,7 @@
     $('resultTitle').textContent = game.endReason === 'time' ? 'TIME UP!' : 'GAME OVER';
     $('resultMessage').textContent = game.recovered ? `${game.recovered}명의 일상을 되찾았어요` : '다음 한 발은 더 따뜻하게!';
     $('resultScore').textContent = game.score.toLocaleString('ko-KR');
-    const reward = game.reward();
-    $('couponReward').textContent = reward ? reward.amount ? `${reward.amount.toLocaleString('ko-KR')}원 쿠폰` : reward.label : '다음 한 발을 응원해요';
-    $('rewardNote').textContent = reward ? '리워드 미리보기 · 실제 쿠폰은 발급되지 않아요' : '';
+    window.BonReward.show(game.score);
     $('announcement').textContent = `${$('resultTitle').textContent}. 최종 점수 ${game.score}`;
     $('restartBtn').focus({
       preventScroll: true
@@ -303,6 +301,7 @@
   }
   function start() {
     if (helpDialog.open) return;
+    window.BonReward.reset();
     if (!assetsReady) {
       loadAssets();
       return;
@@ -430,7 +429,18 @@
   });
   canvas.addEventListener('contextmenu', event => event.preventDefault());
   $('startBtn').addEventListener('click', requestStart);
-  $('restartBtn').addEventListener('click', start);
+  $('restartBtn').addEventListener('click', () => {
+    cancelAim();
+    stopCheerVoice();
+    resetBonusMusic();
+    window.BonReward.reset();
+    Object.assign(game, new Game(game.layout));
+    renderer.effects = [];
+    syncScreens();
+    updateHud();
+    renderer.draw(game, aim);
+    $('startBtn').focus({preventScroll: true});
+  });
   $('helpBtn').addEventListener('click', () => openHelp());
   $('helpCloseBtn').addEventListener('click', () => closeHelp());
   $('helpConfirmBtn').addEventListener('click', () => closeHelp(true));

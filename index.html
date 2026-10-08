@@ -58,6 +58,11 @@
         <img class="result-human" src="human_gray.png" alt="회복된 캐릭터">
         <div class="result-score"><span>SCORE</span><strong id="resultScore">0</strong></div>
         <div class="reward" id="reward"><span class="reward-label">REWARD</span><strong id="couponReward">다음 한 발을 응원해요</strong><small id="rewardNote"></small></div>
+        <div id="wheelArea" class="wheel-area" hidden>
+          <div class="wheel-stage gacha-stage"><canvas id="rewardWheel" width="600" height="600" aria-label="할인 쿠폰과 메뉴권을 뽑는 행운의 캡슐 머신"></canvas></div>
+          <p id="wheelStatus" role="status">행운의 회복 아이템을 뽑아봐!</p>
+          <button id="spinBtn" class="primary-button" type="button">돌려 돌려! <span aria-hidden="true">↻</span></button>
+        </div>
         <button class="primary-button" id="restartBtn" type="button">RESTART<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
       </section>
       <p class="sr-only" id="announcement" aria-live="polite"></p>
@@ -96,8 +101,17 @@
   <audio id="bonusMusic" src="magnific-ballare.mp3" preload="metadata" loop hidden></audio>
   <audio id="characterVoice" src="character-cheer.m4a" preload="auto" hidden></audio>
   <script src="hit-shapes.js?v=20260924-recovery-rush"></script>
-  <script src="game-core.js?v=20260925-topping-level-up"></script>
-  <script src="game-renderer.js?v=20260925-topping-level-up"></script>
-  <script src="game.js?v=20260925-topping-level-up"></script>
+  <script src="game-core.js?v=20260930-difficulty"></script>
+  <script src="game-renderer.js?v=20260930-difficulty"></script>
+  <dialog id="couponDialog" class="coupon-dialog" aria-labelledby="couponTitle">
+    <p class="eyebrow">BONUS REWARD</p>
+    <h2 id="couponTitle">COUPON GET!</h2>
+    <div class="coupon-burst"><span aria-hidden="true">✦</span><img src="human_gray.png" alt="기뻐하는 회복 캐릭터"><span aria-hidden="true">✦</span></div>
+    <div class="coupon-ticket"><span>BONJUK · RECOVERY ITEM</span><strong id="couponAmount">20%</strong><b id="couponKind">할인 쿠폰</b><span class="ticket-rule">너의 일상에, 든든한 한 그릇</span></div>
+    <p class="coupon-caption">든든한 한 끼로, 다시 힘내봐!</p>
+    <button id="couponConfirm" class="primary-button" type="button">확인 <span aria-hidden="true">→</span></button>
+  </dialog>
+  <script src="reward.js?v=20261001-wheel"></script>
+  <script src="game.js?v=20260930-wheel"></script>
 </body>
 </html>

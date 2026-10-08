@@ -222,3 +222,54 @@ h2 { font-size: 46px; color: var(--white); line-height: 1; text-shadow: 2px 3px 
   h1 { font-size: 54px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+.wheel-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.wheel-stage { position: relative; width: min(270px, 65vw, 34dvh); aspect-ratio: 1; }
+#rewardWheel { width: 100%; height: 100%; display: block; }
+.wheel-pointer { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); z-index: 2; color: #fff2be; font-size: 32px; text-shadow: 0 3px #21112f; }
+.wheel-mascot { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); height: 27%; width: auto; }
+.wheel-stage { filter: drop-shadow(0 8px 0 #08040e); }
+.coupon-dialog { width: min(480px,calc(100% - 28px)); max-height: calc(100dvh - 28px); overflow: auto; padding: 28px 22px; border: 3px solid #af7ed0; color: #fff0d9; background: #160c22; text-align: center; box-shadow: 8px 8px 0 #09040f; }
+.coupon-dialog::backdrop { background: #08040fee; }
+.coupon-dialog h2 { color: #efbc48; font-size: 38px; margin: 14px 0; }
+.coupon-burst { display: flex; align-items: center; justify-content: center; gap: 26px; height: 100px; color: #efbc48; font-size: 32px; }
+.coupon-burst img { height: 100%; width: auto; }
+.coupon-ticket { margin: 20px auto 12px; max-width: 310px; display: grid; gap: 8px; background: #efbc48; color: #261236; padding: 20px; clip-path: polygon(0 8px,8px 8px,8px 0,calc(100% - 8px) 0,calc(100% - 8px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 8px),0 calc(100% - 8px)); }
+.coupon-ticket strong { font-size: 58px; line-height: 1.15; font-weight: 400; }
+.ticket-rule { border-top: 2px dashed #74552b; padding-top: 14px; margin-top: 8px; }
+.wheel-area { padding-top: 8px; }
+.wheel-stage::before { content: ''; position: absolute; inset: -7px; border: 2px solid #694481; border-radius: 50%; pointer-events: none; }
+.gacha-stage::before { display: none; }
+.gacha-stage { width: min(320px,75vw,38dvh); }
+#spinBtn { background: #edc45a; color: #271332; border-color: #fff0b1; box-shadow: inset 0 -4px #b28a35, 0 5px #21132f; justify-content: center; }
+.coupon-dialog { background: #160c22; border-color: #e3bd62; }
+.coupon-ticket span { font-size: 13px; }
+.coupon-ticket b { font-size: 22px; font-weight: 400; }
+.coupon-caption { font-size: 16px; }
+.coupon-dialog small { display: block; color: #b8abc6; font-size: 11px; }
+.coupon-dialog .primary-button { margin: 22px auto 5px; }
+.coupon-dialog[open] .coupon-ticket { animation: coupon-in .35s ease-out; }
+@keyframes coupon-in { from { transform: translateY(16px) scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-height: 640px) { .coupon-dialog { padding: 16px; } .coupon-burst { height: 60px; } .coupon-ticket { margin: 10px auto; padding: 12px; } .coupon-ticket strong { font-size: 48px; } .coupon-dialog .primary-button { height: 42px; margin-top: 12px; } }
+@media (prefers-reduced-motion: reduce) { .coupon-dialog[open] .coupon-ticket { animation: none; } }
+#wheelStatus { margin: 0; font-size: 14px; color: var(--yellow); line-height: 1.4; }
+.result-screen.has-wheel { gap: 8px; background: #100a19f5; }
+.has-wheel .result-human { display: none; }
+.has-wheel h2 { font-size: 30px; }
+.has-wheel .result-score strong { font-size: 32px; }
+.has-wheel .reward { padding: 8px 0; gap: 5px; }
+.has-wheel .primary-button { height: 44px; font-size: 17px; margin-top: 0; }
+.has-wheel #restartBtn { background: transparent; box-shadow: none; border-color: #694782; width: 200px; height: 36px; font-size: 14px; }
+button:disabled { cursor: default; opacity: .65; }
+@media (min-aspect-ratio: 6/5) {
+  .result-screen.has-wheel { display: grid; grid-template-columns: minmax(200px,320px) minmax(220px,320px); grid-template-rows: repeat(5,auto); align-content: center; justify-content: center; column-gap: 36px; }
+  .has-wheel .eyebrow { display: block; grid-column: 1; }
+  .has-wheel h2, .has-wheel .result-score, .has-wheel .reward, .has-wheel #restartBtn { grid-column: 1; grid-row: auto; justify-self: center; }
+  .has-wheel .wheel-area { grid-column: 2; grid-row: 1 / 6; }
+  .wheel-stage { width: min(280px, 38dvh); }
+}
+@media (max-height: 700px) and (max-aspect-ratio: 6/5) {
+  .result-screen.has-wheel { padding: 10px; gap: 5px; }
+  .has-wheel .eyebrow { display: none; }
+  .wheel-stage { width: min(210px,30dvh); }
+  .has-wheel h2 { font-size: 25px; }
+}

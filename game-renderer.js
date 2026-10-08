@@ -228,7 +228,7 @@
     drawBonus(game) {
       const c = this.ctx, l = game.layout, u = l.unit;
       c.save();
-      if (game.menuItem) {
+      if (game.menuItem && !game.menuItem.hidden) {
         const p = game.menuItem;
         c.fillStyle = '#201329e6';
         c.fillRect(p.x - p.w / 2 - 8 * u, p.y - p.h / 2 - 8 * u, p.w + 16 * u, p.h + 16 * u);
@@ -262,7 +262,24 @@
       const p = enemyPose(e, game.time),
         since = game.time - e.hitAt;
       this.ellipse(p.x, p.y + p.h * .48, p.w * .40, 7 * game.layout.unit, '#00000080');
-      if (e.hits >= CONFIG.hitsToRecover) {
+      if (e.kind && e.kind !== 'normal' && e.hits < e.maxHits) {
+        const c = this.ctx, u = game.layout.unit;
+        const y = Math.max(game.layout.fieldTop + 18 * u, p.y - p.h * .5 - 18 * u);
+        c.save();
+        c.textAlign = 'center';
+        c.font = `${20 * u}px Mulmaru, sans-serif`;
+        c.lineWidth = 5 * u;
+        c.strokeStyle = '#100b19';
+        c.fillStyle = e.kind === 'boss' ? C.yellow : C.violet;
+        const label = e.kind === 'boss' ? '과로왕' : '야근 좀비 >>';
+        c.strokeText(label, p.x, y);c.fillText(label, p.x, y);
+        if (e.kind === 'boss') {
+          c.fillStyle = '#100b19';c.fillRect(p.x - 56*u, y + 5*u, 112*u, 10*u);
+          c.fillStyle = C.yellow;c.fillRect(p.x - 54*u, y + 7*u, 108*u*(1-e.hits/e.maxHits), 6*u);
+        }
+        c.restore();
+      }
+      if (e.hits >= (e.maxHits ?? CONFIG.hitsToRecover)) {
         const age = game.time - e.recoveredAt;
         if (age < .1) this.sprite(p.sprite, p.x, p.y, p.w, p.h, {
           alpha: 1 - age / .1,
@@ -475,7 +492,7 @@
       const speech = game.speech;
       if (!speech || game.time - speech.startedAt >= (speech.duration ?? DIALOGUE.duration)) return null;
       const speaker = game.enemies.find(e => e.id === speech.enemyId);
-      if (!speaker || speaker.dead || (speaker.hits >= CONFIG.hitsToRecover && speech.kind !== 'recovery') || game.time - speaker.hitAt < .7) return null;
+      if (!speaker || speaker.dead || (speaker.hits >= (speaker.maxHits ?? CONFIG.hitsToRecover) && speech.kind !== 'recovery') || game.time - speaker.hitAt < .7) return null;
       const l = game.layout, u = l.unit;
       const p = speech.kind === 'recovery' ? recoveryPose(speaker, game.time, u, this.reducedMotion) : enemyPose(speaker, game.time);
       const font = `${20 * u}px Mulmaru, sans-serif`, padding = 18 * u;
@@ -502,7 +519,7 @@
       const overlaps = b => x < b.x + b.w && x + width > b.x && y < b.y + b.h && y + height + tailHeight + shadow > b.y;
       for (const e of game.enemies) {
         if (e.id === speaker.id) continue;
-        const other = e.hits >= CONFIG.hitsToRecover ? recoveryPose(e, game.time, u, this.reducedMotion) : enemyPose(e, game.time);
+        const other = e.hits >= (e.maxHits ?? CONFIG.hitsToRecover) ? recoveryPose(e, game.time, u, this.reducedMotion) : enemyPose(e, game.time);
         if (overlaps({x:other.x - other.w / 2 - 4 * u,y:other.y - other.h / 2 - 4 * u,w:other.w + 8 * u,h:other.h + 8 * u})) return null;
       }
       for (const e of this.effects) {
