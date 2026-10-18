@@ -1,0 +1,168 @@
+/* Only the exhibition title screen is full-bleed; play and results keep their layout. */
+.exhibition-home .game-arena {
+  /* Focus changes must not scroll the canvas or its absolute overlays. */
+  overflow: clip;
+}
+.exhibition-home:has(#startScreen:not([hidden])) .app-shell {
+  max-width: none;
+  padding: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+.exhibition-home:has(#startScreen:not([hidden])) .brand-header,
+.exhibition-home:has(#startScreen:not([hidden])) .brand-footer {
+  display: none;
+}
+.exhibition-home:has(#startScreen:not([hidden])) .game-arena {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  clip-path: none;
+}
+.exhibition-home:has(#startScreen:not([hidden])) .game-arena::after {
+  display: none;
+}
+.exhibition-home:has(#startScreen:not([hidden])) #gameCanvas {
+  visibility: hidden;
+}
+.home-screen {
+  padding: 0;
+  gap: 0;
+  background: #020612;
+}
+.home-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.home-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  image-rendering: auto;
+}
+.home-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(28px, 6dvh, 64px);
+  padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(12dvh, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+}
+.home-identity {
+  width: 100%;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.home-title {
+  width: min(100%, 480px, 50dvh);
+  margin: 0;
+  font-size: inherit;
+  line-height: 0;
+  text-shadow: none;
+}
+.home-title img {
+  width: 100%;
+  height: auto;
+  image-rendering: auto;
+}
+.home-tagline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  max-width: 100%;
+  margin: -6px 0 0;
+  color: #fff9e7;
+  font-size: 14px;
+  line-height: 1.6;
+  text-shadow: 0 2px 0 #080914;
+}
+.home-tagline span {
+  min-width: 0;
+  word-break: keep-all;
+}
+.home-tagline img {
+  width: 28px;
+  height: 32px;
+  flex: none;
+}
+.home-actions {
+  width: 100%;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.home-start {
+  position: relative;
+  width: 220px;
+  max-width: 100%;
+  height: 52px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0 16px 4px;
+  border: 0;
+  border-radius: 0;
+  background: #d47a0c;
+  color: #fff9e5;
+  font-size: 23px;
+  line-height: 1;
+  text-shadow: 2px 2px 0 #6c210d;
+  clip-path: polygon(0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px));
+  box-shadow: inset 0 4px #fff19a, inset 0 -5px #6a230f;
+  transition: transform .12s, filter .12s;
+}
+.home-start::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 5px;
+  border: 2px solid #f3bd47;
+  background: #ad3d18;
+  box-shadow: inset 0 3px #d46224, inset 0 -3px #802714;
+}
+.home-start:not(:disabled):hover {
+  filter: brightness(1.18);
+}
+.home-start:not(:disabled):active {
+  transform: translateY(3px);
+}
+.home-start:focus-visible {
+  outline: none;
+  background: #fff5b6;
+  box-shadow: inset 0 0 0 4px #fff5b6;
+}
+.home-start:focus-visible::before {
+  border-color: #fff5b6;
+}
+.home-actions .load-status {
+  max-width: 340px;
+  min-height: 18px;
+  margin-top: 14px;
+  color: #d6cae6;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+@media (min-width: 600px) {
+  .home-tagline { font-size: 18px; gap: 10px; }
+  .home-tagline img { width: 32px; height: 36px; }
+  .home-start { width: 248px; height: 56px; font-size: 25px; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .home-content { gap: 22px; padding-block: 12px 6dvh; }
+  .home-title { width: min(310px, 52dvh); }
+  .home-tagline { font-size: 13px; margin-top: -8px; gap: 4px; }
+  .home-tagline img { width: 22px; height: 25px; }
+  .home-start { width: 196px; height: 44px; font-size: 20px; }
+  .home-actions .load-status { margin-top: 6px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-start { transition: none; }
+}

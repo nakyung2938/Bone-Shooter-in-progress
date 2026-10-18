@@ -1,0 +1,174 @@
+.exhibition-home {
+  --cream: #050a17; --white: #fff9e7; --ink: #fff2d6; --muted: #b9b3cd;
+  --yellow: #ffd75f; --line: #39304e; --violet: #b69cda; background: #020612;
+}
+.exhibition-home .app-shell {
+  max-width: 1440px; margin-inline: auto; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  grid-template-rows: 60px minmax(0, 1fr);
+}
+.exhibition-home .brand-header {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+  background: #050a17; border-bottom: 1px solid #39304e;
+}
+.exhibition-home .brand-bowl { width: 30px; height: 28px; }
+.exhibition-home .brand-name { color: #fff2d6; font-size: 18px; }
+.exhibition-home .brand-lockup { gap: 5px; }
+.exhibition-home .game-wordmark { font-size: 17px; color: #ffd75f; text-shadow: 1px 2px #342441; }
+.exhibition-home .brand-footer { display: none; }
+.exhibition-home .icon-button { width: 34px; height: 44px; }
+.exhibition-home .icon-button:not(:disabled):hover { background: #ffd75f12; color: #ffd75f; }
+.exhibition-home .game-arena {
+  width: 100%; height: 100%; aspect-ratio: auto; clip-path: none;
+  /* Focus changes must not scroll the canvas or its absolute overlays. */
+  overflow: clip;
+}
+.exhibition-home .game-arena::after { display: none; }
+.exhibition-home .hud {
+  grid-template-columns: 1fr 1fr 1fr; padding: 16px 20px;
+  background: #050a17ed; border-bottom: 1px solid #75609580;
+}
+.exhibition-home .readout { gap: 8px; }
+.exhibition-home .readout-label { color: #b9b3cd; font-size: 10px; }
+.exhibition-home .readout b { font-size: 25px; }
+.exhibition-home .time-readout { border-inline: 1px solid #39304e; color: #ffd75f; }
+.exhibition-home .time-readout.urgent b { color: #ff8872; }
+.exhibition-home .hearts { height: 25px; }
+.exhibition-home .hearts img { width: 28px; height: 23px; }
+.exhibition-home:has(#resultScreen:not([hidden])) .hud { visibility: hidden !important; }
+
+/* One action style carries through the title, instructions, pause and rewards. */
+.exhibition-home :is(.home-start, .primary-button) {
+  position: relative; isolation: isolate; width: 240px; max-width: 100%; height: 54px; flex: none;
+  display: flex; align-items: center; justify-content: center; gap: 16px; padding: 0 20px 4px;
+  border: 0; border-radius: 0; background: #d47a0c; color: #fff9e5; font-size: 21px; line-height: 1;
+  text-shadow: 2px 2px 0 #6c210d;
+  clip-path: polygon(0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px));
+  box-shadow: inset 0 4px #fff19a, inset 0 -5px #6a230f; transition: transform .12s, filter .12s;
+}
+.exhibition-home :is(.home-start, .primary-button)::before {
+  content: ""; position: absolute; z-index: -1; inset: 5px; border: 2px solid #f3bd47;
+  background: #ad3d18; box-shadow: inset 0 3px #d46224, inset 0 -3px #802714;
+}
+.exhibition-home :is(.home-start, .primary-button):not(:disabled):hover { filter: brightness(1.18); }
+.exhibition-home :is(.home-start, .primary-button):not(:disabled):active { transform: translateY(3px); }
+.exhibition-home :is(.home-start, .primary-button):focus-visible {
+  outline: none; background: #fff5b6; box-shadow: inset 0 0 0 4px #fff5b6;
+}
+.exhibition-home :is(.home-start, .primary-button):focus-visible::before { border-color: #fff5b6; }
+.exhibition-home .home-start { font-size: 23px; }
+
+.exhibition-home :is(.help-dialog, .coupon-dialog) {
+  border: 2px solid #e5bd61;
+  background: #050a17 url("home-background-portrait.png") center bottom / cover;
+  box-shadow: 0 0 0 4px #0a1020, 0 18px 72px #000a;
+}
+.exhibition-home :is(.help-dialog, .coupon-dialog)::backdrop { background: #020612c9; }
+.exhibition-home .help-dialog { width: min(480px, calc(100% - 32px)); }
+.exhibition-home .help-header { padding: 24px 24px 12px; }
+.exhibition-home .help-header .eyebrow { color: #ffd75f; font-size: 11px; }
+.exhibition-home .help-header h2 { font-size: 28px; color: #fff9e7; }
+.exhibition-home .help-goal { color: #ffd75f; font-size: 15px; }
+.exhibition-home .help-art { height: 100px; margin: 18px 0; }
+.exhibition-home .help-steps { gap: 16px; }
+.exhibition-home .step-number { color: #ffd75f; }
+.exhibition-home .help-steps strong { color: #fff9e7; }
+.exhibition-home .help-steps p { color: #c6c5d4; }
+.exhibition-home .help-rules { border-color: #75609580; margin-top: 18px; }
+.exhibition-home .help-rules p { color: #c6c5d4; }
+.exhibition-home .help-rules .help-points { color: #ffd75f; }
+.exhibition-home .help-footer { padding: 18px 24px 24px; }
+.exhibition-home .help-footer .primary-button { width: 100%; }
+.exhibition-home .pause-screen { background: #020612db; }
+.exhibition-home .pause-screen h2 { color: #ffd75f; }
+.exhibition-home .result-screen {
+  background: #020612dd; padding: 24px 20px; overflow-y: auto; justify-content: safe center;
+}
+.exhibition-home .result-screen:not(.has-wheel) { display: flex; gap: 18px; }
+.exhibition-home .result-screen h2 { color: #ffd75f; font-size: 40px; text-shadow: 3px 3px #503574; }
+.exhibition-home .result-screen .eyebrow { color: #d9d2e8; }
+.exhibition-home .result-score { gap: 6px; }
+.exhibition-home .result-score strong { color: #fff9e7; font-size: 48px; }
+.exhibition-home .reward { border-color: #75609580; max-width: 360px; min-width: 0; width: 100%; }
+.exhibition-home .reward strong { color: #ffd75f; font-size: 19px; }
+.exhibition-home .reward small { line-height: 1.5; }
+.exhibition-home .has-wheel { background: #020612ee; }
+.exhibition-home .has-wheel h2 { font-size: 30px; }
+.exhibition-home .has-wheel .result-score strong { font-size: 32px; }
+.exhibition-home .has-wheel #restartBtn {
+  width: 220px; height: 44px; font-size: 17px; color: #ffffff; background: #181124;
+  border: 1px solid #756095; box-shadow: inset 0 -3px #080511; text-shadow: 1px 1px #050814;
+}
+.exhibition-home .has-wheel #restartBtn::before { display: none; }
+.exhibition-home .has-wheel #spinBtn { width: 240px; height: 48px; font-size: 19px; }
+.exhibition-home #spinBtn {
+  color: #ffffff; background: #d47a0c;
+  box-shadow: inset 0 4px #fff19a, inset 0 -5px #6a230f;
+}
+.exhibition-home #spinBtn:disabled { opacity: 1; }
+.exhibition-home #pauseBtn, .exhibition-home #resumeBtn { color: #ffffff; }
+.exhibition-home .coupon-ticket { color: #24192e; background: #ffd75f; }
+.exhibition-home .coupon-dialog h2 { color: #ffd75f; }
+
+@media (min-width: 600px) {
+  .exhibition-home .app-shell { grid-template-rows: 68px minmax(0, 1fr); }
+  .exhibition-home .brand-header { padding-inline: 28px; }
+  .exhibition-home .brand-name { font-size: 22px; }
+  .exhibition-home .game-wordmark { font-size: 23px; }
+  .exhibition-home .hud { padding: 20px 32px; }
+  .exhibition-home .readout b { font-size: 30px; }
+  .exhibition-home .hearts { height: 30px; }
+  .exhibition-home .hearts img { width: 33px; height: 27px; }
+}
+@media (max-width: 360px) {
+  .exhibition-home .brand-header { padding-inline: 12px; }
+  .exhibition-home .brand-name { display: none; }
+  .exhibition-home .game-wordmark { font-size: 16px; }
+  .exhibition-home .hud { padding-inline: 16px; }
+  .exhibition-home .readout b { font-size: 23px; }
+  .exhibition-home .hearts img { width: 24px; height: 22px; }
+}
+@media (max-height: 700px) {
+  .exhibition-home .help-header { padding: 16px 20px 10px; }
+  .exhibition-home .help-body { padding-inline: 20px; }
+  .exhibition-home .help-art { height: 72px; margin-block: 12px; }
+  .exhibition-home .help-character { height: 70px; }
+  .exhibition-home .help-steps { gap: 12px; }
+  .exhibition-home .help-footer { padding: 14px 20px 16px; }
+  .exhibition-home .result-screen:not(.has-wheel) { gap: 12px; padding-block: 16px; }
+  .exhibition-home .result-screen h2 { font-size: 32px; }
+  .exhibition-home .result-screen .result-human { height: 80px; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .exhibition-home .app-shell { grid-template-rows: 44px minmax(0, 1fr); }
+  .exhibition-home .brand-header { padding-inline: 20px; }
+  .exhibition-home .game-wordmark { font-size: 18px; }
+  .exhibition-home .brand-bowl { width: 26px; height: 24px; }
+  .exhibition-home .brand-name { font-size: 18px; }
+  .exhibition-home .hud { padding: 10px 22px; }
+  .exhibition-home .readout { gap: 4px; }
+  .exhibition-home .readout b { font-size: 21px; }
+  .exhibition-home .hearts { height: 23px; }
+  .exhibition-home .hearts img { width: 26px; height: 22px; }
+  .exhibition-home :is(.home-start, .primary-button) { height: 44px; font-size: 18px; }
+  .exhibition-home .home-start { width: 208px; font-size: 20px; }
+  .exhibition-home .result-screen:not(.has-wheel) {
+    display: grid; grid-template-columns: 160px minmax(200px, 280px); grid-template-rows: auto auto auto;
+    align-content: safe center; justify-content: center; gap: 12px 24px;
+  }
+  .exhibition-home .result-screen:not(.has-wheel) .eyebrow { display: none; }
+  .exhibition-home .result-screen:not(.has-wheel) h2 { grid-column: 1; grid-row: 1; font-size: 28px; }
+  .exhibition-home .result-screen:not(.has-wheel) .result-human { grid-column: 1; grid-row: 2 / 4; height: 94px; }
+  .exhibition-home .result-screen:not(.has-wheel) .result-score { grid-column: 2; grid-row: 1; }
+  .exhibition-home .result-screen:not(.has-wheel) .result-score strong { font-size: 30px; }
+  .exhibition-home .result-screen:not(.has-wheel) .reward { grid-column: 2; grid-row: 2; padding: 8px 0; }
+  .exhibition-home .result-screen:not(.has-wheel) #restartBtn { grid-column: 2; grid-row: 3; margin: 0; }
+}
+@media (max-height: 700px) and (max-aspect-ratio: 6/5) {
+  .exhibition-home .result-screen.has-wheel { padding: 10px 16px; gap: 6px; }
+  .exhibition-home .result-screen.has-wheel h2 { font-size: 26px; }
+  .exhibition-home .has-wheel .wheel-area { padding-top: 0; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exhibition-home :is(.home-start, .primary-button) { transition: none; }
+}

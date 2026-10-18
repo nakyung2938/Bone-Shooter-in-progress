@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#09070c">
+  <meta name="description" content="본죽 BON-SHOOTER. 따뜻한 한 발로 일상을 되찾는 브랜드 아케이드.">
+  <title>BON-SHOOTER | 20초 전시용</title>
+  <link rel="preload" href="Mulmaru.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css?v=20261018-controls">
+  <link rel="stylesheet" href="home.css?v=20261018-flow">
+  <link rel="stylesheet" href="theme.css?v=20261018-controls">
+</head>
+<body class="exhibition-home">
+  <div class="app-shell">
+    <header class="brand-header">
+      <div class="brand-lockup"><img class="brand-bowl" src="bonjuk_bowl.png" alt="" width="40" height="33"><span class="brand-name">본죽</span></div>
+      <span class="game-wordmark">BON-SHOOTER</span>
+      <div class="header-actions">
+        <button class="icon-button" id="helpBtn" aria-label="게임 방법" title="게임 방법" aria-haspopup="dialog" aria-controls="helpDialog" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+        </button>
+        <button class="icon-button" id="soundBtn" aria-label="소리 켜기" title="소리 켜기" aria-pressed="false" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><g id="soundOn" hidden><path d="M16 9a5 5 0 0 1 0 6M19.364 18.364a9 9 0 0 0 0-12.728"/></g><g id="soundOff"><path d="m22 9-6 6m0-6 6 6"/></g></svg>
+        </button>
+        <button class="icon-button" id="pauseBtn" aria-label="일시정지" title="일시정지" type="button" disabled>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>
+        </button>
+      </div>
+    </header>
+    <main class="game-arena" id="gameArena" aria-label="본죽 죽과 비빔밥 슈팅 게임">
+      <canvas id="gameCanvas" width="720" height="1280" tabindex="0" aria-label="좀비 쪽 화면을 누르고 있으면 죽과 비빔밥이 랜덤으로 연속 발사. 손을 떼면 멈춤">이 게임은 Canvas를 지원하는 브라우저가 필요합니다.</canvas>
+      <section class="hud" id="hud" aria-label="게임 현황">
+        <div class="readout hp-readout"><span class="readout-label">HP</span><div class="hearts" id="hearts" role="img" aria-label="체력 3 / 3"><img src="heart_violet.png" alt="" width="33" height="27"><img src="heart_violet.png" alt="" width="33" height="27"><img src="heart_violet.png" alt="" width="33" height="27"></div></div>
+        <div class="readout time-readout"><span class="readout-label">TIME</span><b id="timeText">00:20</b></div>
+        <div class="readout score-readout"><span class="readout-label">SCORE</span><b id="scoreText">000000</b></div>
+      </section>
+      <section class="overlay start-screen home-screen" id="startScreen" aria-labelledby="startTitle">
+        <picture class="home-backdrop" aria-hidden="true">
+          <source media="(orientation: portrait)" srcset="home-background-portrait.png">
+          <img src="home-background-landscape.png" alt="" width="1672" height="941" fetchpriority="high">
+        </picture>
+        <div class="home-content">
+          <div class="home-identity">
+            <h1 class="home-title" id="startTitle"><img src="home-logo.png" alt="너 이런거 해본죽 있어??" width="1402" height="1122" fetchpriority="high"></h1>
+            <p class="home-tagline">
+              <img src="home-potion-green.png" alt="" width="81" height="81">
+              <span>식사를 퀘스트로, 본죽을 포션으로</span>
+              <img src="home-potion-red.png" alt="" width="96" height="96">
+            </p>
+          </div>
+          <div class="home-actions">
+            <button class="home-start" id="startBtn" type="button" disabled><span id="startLabel">준비 중</span></button>
+            <p class="load-status" id="loadStatus" role="status"></p>
+          </div>
+        </div>
+      </section>
+      <section class="overlay pause-screen" id="pauseScreen" aria-labelledby="pauseTitle" hidden>
+        <p class="eyebrow">잠깐 쉬어가요</p><h2 id="pauseTitle">PAUSED</h2>
+        <button class="primary-button" id="resumeBtn" type="button">계속하기<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+      </section>
+      <section class="overlay result-screen" id="resultScreen" aria-labelledby="resultTitle" hidden>
+        <p class="eyebrow" id="resultMessage">따뜻한 한 그릇, 수고했어요!</p>
+        <h2 id="resultTitle">TIME UP!</h2>
+        <img class="result-human" src="human_gray.png" alt="회복된 캐릭터">
+        <div class="result-score"><span>SCORE</span><strong id="resultScore">0</strong></div>
+        <div class="reward" id="reward"><span class="reward-label">REWARD</span><strong id="couponReward">다음 한 발을 응원해요</strong><small id="rewardNote"></small></div>
+        <div id="wheelArea" class="wheel-area" hidden>
+          <div class="wheel-stage gacha-stage"><canvas id="rewardWheel" width="600" height="600" aria-label="할인 쿠폰과 메뉴권을 뽑는 행운의 캡슐 머신"></canvas></div>
+          <p id="wheelStatus" role="status">행운의 회복 아이템을 뽑아봐!</p>
+          <button id="spinBtn" class="primary-button" type="button">돌려 돌려! <span aria-hidden="true">↻</span></button>
+        </div>
+        <button class="primary-button" id="restartBtn" type="button">RESTART<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+      </section>
+      <p class="sr-only" id="announcement" aria-live="polite"></p>
+    </main>
+    <footer class="brand-footer"><span>한 그릇에 담은 정성</span><span>© BONJUK</span></footer>
+  </div>
+  <dialog class="help-dialog" id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpGoal">
+    <header class="help-header">
+      <div><p class="eyebrow">HOW TO PLAY</p><h2 id="helpTitle" tabindex="-1">게임 방법</h2></div>
+      <button class="icon-button" id="helpCloseBtn" aria-label="게임 방법 닫기" title="닫기" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18m0-12 12 12"/></svg></button>
+    </header>
+    <div class="help-body">
+      <p class="help-goal" id="helpGoal">20초 안에 최고 점수에 도전해요.</p>
+      <div class="help-art" aria-hidden="true">
+        <div class="help-meals"><img src="meal_porridge.png" alt=""><img src="meal_bibimbap.png" alt=""></div>
+        <svg class="help-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        <img class="help-character" src="zombie_gray_front.png" alt="">
+        <svg class="help-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        <img class="help-character" src="human_gray.png" alt="">
+      </div>
+      <ol class="help-steps">
+        <li><span class="step-number" aria-hidden="true">01</span><div><strong>좀비 쪽을 꾹 누르기</strong><p>좀비가 있는 곳을 터치하거나 클릭해요.</p></div></li>
+        <li><span class="step-number" aria-hidden="true">02</span><div><strong>죽과 비빔밥이 우다다!</strong><p>누르고 있으면 죽과 비빔밥이 랜덤으로 나가요. 손을 떼면 멈춰요.</p></div></li>
+        <li><span class="step-number" aria-hidden="true">03</span><div><strong>두 번 맞혀 회복시키기</strong><p id="helpRecovery">같은 좀비를 두 번 맞히면 사람으로 회복돼요.</p></div></li>
+      </ol>
+      <div class="help-rules">
+        <p class="help-points" id="helpPoints">적중 +100 · 회복 보너스 +250</p>
+        <p id="helpCombo">3초 안에 연속으로 맞히면 COMBO!</p>
+        <p id="helpLives">하트는 3개. 좀비가 하단 경계를 넘으면 하나씩 줄고, 모두 잃으면 게임이 끝나요.</p>
+      </div>
+    </div>
+    <footer class="help-footer"><button class="primary-button" id="helpConfirmBtn" type="button"><span id="helpConfirmLabel">확인</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button></footer>
+  </dialog>
+  <script src="sat.js"></script>
+  <audio id="backgroundMusic" src="noctonic-quest.mp3" preload="metadata" loop hidden></audio>
+  <audio id="bonusMusic" src="magnific-ballare.mp3" preload="metadata" loop hidden></audio>
+  <audio id="characterVoice" src="character-cheer.m4a" preload="auto" hidden></audio>
+  <script src="hit-shapes.js?v=20260924-recovery-rush"></script>
+  <script src="game-core.js?v=20260930-difficulty"></script>
+  <script src="game-renderer.js?v=20260930-difficulty"></script>
+  <dialog id="couponDialog" class="coupon-dialog" aria-labelledby="couponTitle">
+    <p class="eyebrow">BONUS REWARD</p>
+    <h2 id="couponTitle">COUPON GET!</h2>
+    <div class="coupon-burst"><span aria-hidden="true">✦</span><img src="human_gray.png" alt="기뻐하는 회복 캐릭터"><span aria-hidden="true">✦</span></div>
+    <div class="coupon-ticket"><span>BONJUK · RECOVERY ITEM</span><strong id="couponAmount">20%</strong><b id="couponKind">할인 쿠폰</b><span class="ticket-rule">너의 일상에, 든든한 한 그릇</span></div>
+    <p class="coupon-caption">든든한 한 끼로, 다시 힘내봐!</p>
+    <button id="couponConfirm" class="primary-button" type="button">확인 <span aria-hidden="true">→</span></button>
+  </dialog>
+  <script src="reward.js?v=20261018-press-stop"></script>
+  <script src="game.js?v=20260930-wheel"></script>
+</body>
+</html>
